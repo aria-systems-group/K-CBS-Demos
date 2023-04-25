@@ -63,15 +63,18 @@ public:
         Robot* other_robot = robots_.at(robot2_name);
         const double rad2 = other_robot->getBoundingRadius();
 
-        // get the positions of the other robots
+        // get the positions of the robots
         const double* this_pos = state1->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
         const double* other_pos = state2.second->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
 
         // perform quick collision check
         if (!performQuickCollisionCheck(this_pos, other_pos, rad2))
         {
+            // get the positions of the robots
+            const double this_rot = state1->as<ob::CompoundStateSpace::StateType>()->as<ob::SO2StateSpace::StateType>(1)->value;
+            const double other_rot = state2.second->as<ob::CompoundStateSpace::StateType>()->as<ob::SO2StateSpace::StateType>(1)->value;
             // collision possible, must check exact
-            if (!performExactCollisionCheck(this_pos, other_pos, rad2))
+            if (!performExactCollisionCheck(this_pos, this_rot, other_pos, other_rot, other_robot))
                 return false;
         }
         return true;
@@ -80,25 +83,47 @@ private:
     // returns true if no collision is possible (i.e. robots are too far away to collide)
     bool performQuickCollisionCheck(const double* this_pos, const double* other_pos, const double other_rad) const
     {
-        // std::cout << "here " << this_pos[0] << "," << this_pos[1] << " and " << other_pos[0] << "," << other_pos[1] << std::endl;
         const double distance = sqrt(pow(this_pos[0] - other_pos[0], 2) + pow(this_pos[1] - other_pos[1], 2));
-        // std::cout << distance << " vs. " << (rad1_ + other_rad) << std::endl;
         if (distance > (rad1_ + other_rad))
-        {
-            // std::cout << "returned true" << std::endl;
             return true;
-        }
         else
-        {
-            // std::cout << "returned false" << std::endl;
             return false;
-        }
     }
 
     // returns true if no collision
-    bool performExactCollisionCheck(const double* this_pos, const double* other_pos, const double other_rad) const
+    bool performExactCollisionCheck(const double* this_pos, const double this_rot, const double* other_pos, const double other_rot, const Robot* other_robot) const
     {
-        return false;
+        BoostPolygon poly1 = robot1_->getShape();
+        // use boost transform to create polygon at true robots location
+        BoostPolygon tmp1;
+        BoostPolygon result1;
+        boost::geometry::correct(tmp1);
+        boost::geometry::assign(tmp1, poly1);
+        boost::geometry::strategy::transform::matrix_transformer<double, 2, 2> xfrm1(
+                 cos(this_rot), sin(this_rot), this_pos[0],
+                -sin(this_rot), cos(this_rot), this_pos[1],
+                          0,          0,  1);
+        boost::geometry::transform(tmp1, result1, xfrm1);
+        boost::geometry::correct(result1);
+
+        BoostPolygon poly2 = other_robot->getShape();
+        // use boost transform to create polygon at true robots location
+        BoostPolygon tmp2;
+        BoostPolygon result2;
+        boost::geometry::correct(tmp2);
+        boost::geometry::assign(tmp2, poly2);
+        boost::geometry::strategy::transform::matrix_transformer<double, 2, 2> xfrm2(
+                 cos(other_rot), sin(other_rot), other_pos[0],
+                -sin(other_rot), cos(other_rot), other_pos[1],
+                          0,          0,  1);
+        boost::geometry::transform(tmp2, result2, xfrm2);
+        boost::geometry::correct(result2);
+
+        // check if resulting polygons are in collision
+        if (!boost::geometry::disjoint(result1, result2))
+            return false;
+        else
+            return true;
     }
 
     const std::string robot1_name_;

@@ -64,6 +64,11 @@ void plan()
                                                                             {"Robot 7", {18, 12}},
                                                                             {"Robot 8", {19, 21}},
                                                                             {"Robot 9", {10, 22}},
+                                                                            {"Robot 10", {28, 20}},
+                                                                            {"Robot 11", {24, 12}},
+                                                                            {"Robot 12", {17, 30}},
+                                                                            {"Robot 13", {14, 2}},
+                                                                            {"Robot 14", {4, 30}},
                                                                         };
 
     const std::unordered_map<std::string, std::pair<int, int>> goal_map{    {"Robot 0", {7, 18}}, 
@@ -76,10 +81,14 @@ void plan()
                                                                             {"Robot 7", {27, 3}},
                                                                             {"Robot 8", {30, 22}},
                                                                             {"Robot 9", {18, 4}},
+                                                                            {"Robot 10", {28, 8}},
+                                                                            {"Robot 11", {4, 12}},
+                                                                            {"Robot 12", {31, 26}},
+                                                                            {"Robot 13", {31, 5}},
+                                                                            {"Robot 14", {2, 20}},
                                                                         };
 
-
-    // construct all of the robots (assume square robots with unit length)
+    // construct all of the robots
     std::unordered_map<std::string, Robot*> robot_map;
     for (auto itr = start_map.begin(); itr != start_map.end(); itr++)
     {
@@ -153,7 +162,7 @@ void plan()
     planner->setProblemDefinition(ma_pdef); // be sure to set the problem definition
     planner->setLowLevelSolveTime(5.);
 
-    bool solved = planner->as<omrb::Planner>()->solve(60.0);
+    bool solved = planner->as<omrb::Planner>()->solve(240.0);
     if (solved)
     {
         std::cout << "Found solution!" << std::endl;
