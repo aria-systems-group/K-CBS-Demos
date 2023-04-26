@@ -45,6 +45,7 @@
 #include <ompl/multirobot/control/planners/kcbs/KCBS.h>
 #include <unordered_map>
 #include <math.h>
+#include <chrono>
 
 namespace omrb = ompl::multirobot::base;
 namespace omrc = ompl::multirobot::control;
@@ -153,10 +154,15 @@ void plan()
     planner->setProblemDefinition(ma_pdef); // be sure to set the problem definition
     planner->setLowLevelSolveTime(5.);
 
-    bool solved = planner->as<omrb::Planner>()->solve(60.0);
+    auto start = std::chrono::high_resolution_clock::now();
+    bool solved = planner->as<omrb::Planner>()->solve(180.0);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    double duration_s = (duration_ms.count() * 0.001);
+
     if (solved)
     {
-        std::cout << "Found solution!" << std::endl;
+        printf("Found Solution in %0.2f seconds!\n", duration_s);
         omrb::PlanPtr solution = ma_pdef->getSolutionPlan();
         std::ofstream MyFile("plan.txt");
         solution->as<omrc::PlanControl>()->printAsMatrix(MyFile, "Robot");

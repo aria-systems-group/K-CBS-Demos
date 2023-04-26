@@ -70,6 +70,11 @@ void plan()
                                                                             {"Robot 12", {17, 30}},
                                                                             {"Robot 13", {14, 2}},
                                                                             {"Robot 14", {4, 30}},
+                                                                            {"Robot 15", {8, 30}},
+                                                                            {"Robot 16", {2, 8}},
+                                                                            {"Robot 17", {18, 18}},
+                                                                            {"Robot 18", {30, 24}},
+                                                                            {"Robot 19", {12, 24}},
                                                                         };
 
     const std::unordered_map<std::string, std::pair<int, int>> goal_map{    {"Robot 0", {7, 18}}, 
@@ -87,6 +92,11 @@ void plan()
                                                                             {"Robot 12", {31, 26}},
                                                                             {"Robot 13", {31, 5}},
                                                                             {"Robot 14", {2, 20}},
+                                                                            {"Robot 15", {27, 31}},
+                                                                            {"Robot 16", {11, 3}},
+                                                                            {"Robot 17", {16, 28}},
+                                                                            {"Robot 18", {22, 10}},
+                                                                            {"Robot 19", {22, 14}},
                                                                         };
 
     // construct all of the robots
@@ -182,6 +192,6 @@ void plan()
 
 int main(int argc, char ** argv)
 {
-    std::cout << "Planning for 15 2nd order cars inside an Empty 32x32 workspace with K-CBS." << std::endl;
+    std::cout << "Planning for 20 2nd order cars inside an Empty 32x32 workspace with K-CBS." << std::endl;
     plan();
 }
