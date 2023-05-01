@@ -166,9 +166,9 @@ void plan()
         omrb::PlanPtr solution = ma_pdef->getSolutionPlan();
         std::ofstream MyFile("plan.txt");
         solution->as<omrc::PlanControl>()->printAsMatrix(MyFile, "Robot");
-        std::ofstream MyFile2("tree.txt");
-        planner->printConstraintTree(MyFile2);
     }
+    std::ofstream MyFile2("tree.txt");
+    planner->printConstraintTree(MyFile2);
 }
 
 int main(int argc, char ** argv)
