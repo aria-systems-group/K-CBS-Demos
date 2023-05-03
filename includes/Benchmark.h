@@ -95,18 +95,15 @@ public:
         // set up all of the planners and saveable parameters
         for (auto &p: planners_)
         {
-            p->setup();
             results_[p->getName() + " Success (Bool)"] = {};
             results_[p->getName() + " Computation Times (seconds)"] = {};
         }
-
-        for (auto itr = results_.begin(); itr != results_.end(); ++itr)
-            std::cout << itr->first << ": " << itr->second.size() << std::endl;
 
         std::cout << "Set-Up Complete: Benchmarking..." << std::endl;
 
         for (unsigned int n = 0; n < numRuns_; n++)
         {
+            std::cout << "Run " << n << std::endl;
             for (auto &p: planners_)
             {
                 // time the planner's solve sequence
@@ -123,7 +120,7 @@ public:
                 // clear the planner data
                 p->clear();
 
-                // reset the problem definition and space information
+                // reset the problem definition
                 pdef_->clearSolutionPaths();
             }
         }
