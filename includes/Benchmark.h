@@ -37,6 +37,7 @@
 #include <ompl/multirobot/control/SpaceInformation.h>
 #include <ompl/multirobot/base/ProblemDefinition.h>
 #include <ompl/multirobot/base/Planner.h>
+#include <ompl/multirobot/control/planners/kcbs/KCBS.h>
 #include <map>
 #include <iostream>
 #include <fstream>
@@ -97,6 +98,12 @@ public:
         {
             results_[p->getName() + " Success (Bool)"] = {};
             results_[p->getName() + " Computation Times (seconds)"] = {};
+            if (p->getName() == "K-CBS")
+            {
+                results_[p->getName() + " Number of Expanded Nodes"] = {};
+                results_[p->getName() + " Number Approximate Solutions"] = {};
+                results_[p->getName() + " Root Node Solve Time"] = {};
+            }
         }
 
         std::cout << "Set-Up Complete: Benchmarking..." << std::endl;
@@ -116,6 +123,12 @@ public:
                 // save the relevant data
                 results_[p->getName() + " Success (Bool)"].push_back(std::to_string(solved == ob::PlannerStatus::EXACT_SOLUTION));
                 results_[p->getName() + " Computation Times (seconds)"].push_back(std::to_string(duration_s));
+                if (p->getName() == "K-CBS")
+                {
+                    results_[p->getName() + " Number of Expanded Nodes"].push_back(std::to_string(p->as<omrc::KCBS>()->getNumberOfNodesExpanded()));
+                    results_[p->getName() + " Number Approximate Solutions"].push_back(std::to_string(p->as<omrc::KCBS>()->getNumberOfApproximateSolutions()));
+                    results_[p->getName() + " Root Node Solve Time"].push_back(std::to_string(p->as<omrc::KCBS>()->getRootSolveTime()));
+                }
 
                 // clear the planner data
                 p->clear();
