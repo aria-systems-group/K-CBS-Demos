@@ -139,32 +139,73 @@ public:
         }
     }
 
-    void writeCSV()
-{
-    std::string name = filename_ + ".csv";
+    void runKCBS()
+    {
+        // set up all of the saveable parameters for KCBS
+        results_["K-CBS Success (Bool)"] = {};
+        results_["K-CBS Computation Times (seconds)"] = {};
+        results_["K-CBS Number of Expanded Nodes"] = {};
+        results_["K-CBS Number Approximate Solutions"] = {};
+        results_["K-CBS Root Node Solve Time"] = {};
 
-    std::ifstream infile(name);
-    bool exist = infile.good();
-    infile.close();
-    if (!exist)
-    {
-        std::ofstream addHeads(name);
-        for(auto itr = results_.begin(); itr != results_.end(); ++itr)
-            addHeads << itr->first << ",";
-        addHeads << std::endl;
-        addHeads.close();
-    }
-    std::ofstream stats(name, std::ios::app);
-    for (unsigned int idx = 0; idx != numRuns_; idx++)
-    {
-        for(auto itr = results_.begin(); itr != results_.end(); ++itr)
+        std::cout << "Set-Up Complete: Benchmarking KCBS..." << std::endl;
+
+        for (unsigned int n = 0; n < numRuns_; n++)
         {
-            stats << itr->second[idx] << ",";
+            std::cout << "Run " << n << std::endl;
+
+            omrb::PlannerPtr p = std::make_shared<omrc::KCBS>(si_);
+            p->setProblemDefinition(pdef_);
+            p->as<omrc::KCBS>()->setLowLevelSolveTime(5.);
+
+            // time the planner's solve sequence
+            auto start = std::chrono::high_resolution_clock::now();
+            ob::PlannerStatus solved = p->solve(solveTime_);
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+            double duration_s = (duration_ms.count() * 0.001);
+
+            // save the relevant data
+            results_[p->getName() + " Success (Bool)"].push_back(std::to_string(solved == ob::PlannerStatus::EXACT_SOLUTION));
+            results_[p->getName() + " Computation Times (seconds)"].push_back(std::to_string(duration_s));
+            results_[p->getName() + " Number of Expanded Nodes"].push_back(std::to_string(p->as<omrc::KCBS>()->getNumberOfNodesExpanded()));
+            results_[p->getName() + " Number Approximate Solutions"].push_back(std::to_string(p->as<omrc::KCBS>()->getNumberOfApproximateSolutions()));
+            results_[p->getName() + " Root Node Solve Time"].push_back(std::to_string(p->as<omrc::KCBS>()->getRootSolveTime()));
+
+            // reset the problem definition
+            pdef_->clearSolutionPaths();
+
+            p->clear();
+            p.reset();
         }
-        stats << std::endl;
     }
-    stats.close();
-}
+
+    void writeCSV()
+    {
+        std::string name = filename_ + ".csv";
+
+        std::ifstream infile(name);
+        bool exist = infile.good();
+        infile.close();
+        if (!exist)
+        {
+            std::ofstream addHeads(name);
+            for(auto itr = results_.begin(); itr != results_.end(); ++itr)
+                addHeads << itr->first << ",";
+            addHeads << std::endl;
+            addHeads.close();
+        }
+        std::ofstream stats(name, std::ios::app);
+        for (unsigned int idx = 0; idx != numRuns_; idx++)
+        {
+            for(auto itr = results_.begin(); itr != results_.end(); ++itr)
+            {
+                stats << itr->second[idx] << ",";
+            }
+            stats << std::endl;
+        }
+        stats.close();
+    }
 
 private:
     omrc::SpaceInformationPtr si_;

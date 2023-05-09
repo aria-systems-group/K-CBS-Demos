@@ -164,12 +164,12 @@ void benchmark()
     b->setSpaceInformation(si);
     b->setPoroblemDefinition(pdef);
 
-    // allocate the planners for the benchmark
-    // planner 1: K-CBS
-    omrb::PlannerPtr planner1 = std::make_shared<omrc::KCBS>(si);
-    planner1->setProblemDefinition(pdef);
-    planner1->as<omrc::KCBS>()->setLowLevelSolveTime(5.);
-    b->addPlanner(planner1);
+    // // allocate the planners for the benchmark
+    // // planner 1: K-CBS
+    // omrb::PlannerPtr planner1 = std::make_shared<omrc::KCBS>(si);
+    // planner1->setProblemDefinition(pdef);
+    // planner1->as<omrc::KCBS>()->setLowLevelSolveTime(5.);
+    // b->addPlanner(planner1);
 
     // // planner 2: PP
     // omrb::PlannerPtr planner2 = std::make_shared<omrc::PP>(si);
@@ -178,11 +178,11 @@ void benchmark()
 
     // set optional params
     b->setSolveTime(180); // optional -- default is 300 seconds
-    // b->setNumberOfRuns(50); // optional -- default is 100 runs
-    b->setFileName("KCBS-Conflicts-Empty32x32-10robots"); // optional -- default is "Results"
+    // b->setNumberOfRuns(10); // optional -- default is 100 runs
+    b->setFileName("KCBS-BaselineReplanningTest2-Empty32x32-10robots"); // optional -- default is "Results"
 
     // run the benchmark
-    b->run();
+    b->runKCBS();
     b->writeCSV();
 }
 
