@@ -178,12 +178,10 @@ void benchmark()
 
     // set optional params
     b->setSolveTime(180); // optional -- default is 300 seconds
-    // b->setNumberOfRuns(10); // optional -- default is 100 runs
-    b->setFileName("KCBS-BaselineReplanningTest2-Empty32x32-10robots"); // optional -- default is "Results"
+    b->setFileName("KCBS-Pruning-Empty32x32-10robots"); // optional -- default is "Results"
 
     // run the benchmark
-    b->runKCBS();
-    // b->writeCSV();
+    b->run();
 }
 
 int main(int argc, char ** argv)
