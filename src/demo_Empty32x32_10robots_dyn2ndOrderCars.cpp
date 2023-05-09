@@ -43,7 +43,7 @@
 #include "PlannerAllocatorDatabase.h"
 
 #include <ompl/multirobot/control/planners/kcbs/KCBS.h>
-#include <unordered_map>
+#include <map>
 #include <math.h>
 #include <chrono>
 
@@ -55,7 +55,7 @@ namespace oc = ompl::control;
 void plan()
 {
     // provide start and goals for every robot
-    const std::unordered_map<std::string, std::pair<int, int>> start_map{   {"Robot 0", {11, 6}}, 
+    const std::map<std::string, std::pair<int, int>> start_map{   {"Robot 0", {11, 6}}, 
                                                                             {"Robot 1", {29, 9}}, 
                                                                             {"Robot 2", {9, 1}},
                                                                             {"Robot 3", {11, 16}},
@@ -67,7 +67,7 @@ void plan()
                                                                             {"Robot 9", {10, 22}},
                                                                         };
 
-    const std::unordered_map<std::string, std::pair<int, int>> goal_map{    {"Robot 0", {7, 18}}, 
+    const std::map<std::string, std::pair<int, int>> goal_map{    {"Robot 0", {7, 18}}, 
                                                                             {"Robot 1", {3, 5}}, 
                                                                             {"Robot 2", {13, 21}},
                                                                             {"Robot 3", {26, 15}},
@@ -152,7 +152,7 @@ void plan()
     // plan using Kinodynamic Conflict Based Search
     auto planner = std::make_shared<omrc::KCBS>(ma_si);
     planner->setProblemDefinition(ma_pdef); // be sure to set the problem definition
-    planner->setLowLevelSolveTime(5.);
+    planner->setLowLevelSolveTime(2.);
 
     auto start = std::chrono::high_resolution_clock::now();
     bool solved = planner->as<omrb::Planner>()->solve(180.0);

@@ -150,34 +150,31 @@ public:
 
         std::cout << "Set-Up Complete: Benchmarking KCBS..." << std::endl;
 
-        for (unsigned int n = 0; n < numRuns_; n++)
-        {
-            std::cout << "Run " << n << std::endl;
+        omrb::PlannerPtr p = std::make_shared<omrc::KCBS>(si_);
+        p->setProblemDefinition(pdef_);
+        p->as<omrc::KCBS>()->setLowLevelSolveTime(5.);
 
-            omrb::PlannerPtr p = std::make_shared<omrc::KCBS>(si_);
-            p->setProblemDefinition(pdef_);
-            p->as<omrc::KCBS>()->setLowLevelSolveTime(5.);
+        // time the planner's solve sequence
+        auto start = std::chrono::high_resolution_clock::now();
+        ob::PlannerStatus solved = p->solve(solveTime_);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        double duration_s = (duration_ms.count() * 0.001);
 
-            // time the planner's solve sequence
-            auto start = std::chrono::high_resolution_clock::now();
-            ob::PlannerStatus solved = p->solve(solveTime_);
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-            double duration_s = (duration_ms.count() * 0.001);
+        // save the relevant data
+        results_[p->getName() + " Success (Bool)"].push_back(std::to_string(solved == ob::PlannerStatus::EXACT_SOLUTION));
+        results_[p->getName() + " Computation Times (seconds)"].push_back(std::to_string(duration_s));
+        results_[p->getName() + " Number of Expanded Nodes"].push_back(std::to_string(p->as<omrc::KCBS>()->getNumberOfNodesExpanded()));
+        results_[p->getName() + " Number Approximate Solutions"].push_back(std::to_string(p->as<omrc::KCBS>()->getNumberOfApproximateSolutions()));
+        results_[p->getName() + " Root Node Solve Time"].push_back(std::to_string(p->as<omrc::KCBS>()->getRootSolveTime()));
 
-            // save the relevant data
-            results_[p->getName() + " Success (Bool)"].push_back(std::to_string(solved == ob::PlannerStatus::EXACT_SOLUTION));
-            results_[p->getName() + " Computation Times (seconds)"].push_back(std::to_string(duration_s));
-            results_[p->getName() + " Number of Expanded Nodes"].push_back(std::to_string(p->as<omrc::KCBS>()->getNumberOfNodesExpanded()));
-            results_[p->getName() + " Number Approximate Solutions"].push_back(std::to_string(p->as<omrc::KCBS>()->getNumberOfApproximateSolutions()));
-            results_[p->getName() + " Root Node Solve Time"].push_back(std::to_string(p->as<omrc::KCBS>()->getRootSolveTime()));
+        // reset the problem definition
+        pdef_->clearSolutionPaths();
 
-            // reset the problem definition
-            pdef_->clearSolutionPaths();
+        p->clear();
+        p.reset();
 
-            p->clear();
-            p.reset();
-        }
+        writeCSV();
     }
 
     void writeCSV()

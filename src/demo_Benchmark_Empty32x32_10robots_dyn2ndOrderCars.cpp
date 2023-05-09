@@ -183,7 +183,7 @@ void benchmark()
 
     // run the benchmark
     b->runKCBS();
-    b->writeCSV();
+    // b->writeCSV();
 }
 
 int main(int argc, char ** argv)
