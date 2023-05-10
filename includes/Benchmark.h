@@ -38,6 +38,7 @@
 #include <ompl/multirobot/base/ProblemDefinition.h>
 #include <ompl/multirobot/base/Planner.h>
 #include <ompl/multirobot/control/planners/kcbs/KCBS.h>
+#include <ompl/multirobot/control/planners/pp/PP.h>
 #include <map>
 #include <iostream>
 #include <fstream>
@@ -111,6 +112,29 @@ public:
         results_.insert({"K-CBS Root Node Solve Time (s)", std::to_string(p.getRootSolveTime())});
         results_.insert({"K-CBS Number of Expanded Nodes", std::to_string(p.getNumberOfNodesExpanded())});
         results_.insert({"K-CBS Number Approximate Solutions", std::to_string(p.getNumberOfApproximateSolutions())});
+
+        // reset the problem definition
+        pdef_->clearSolutionPaths();
+
+        p.clear();
+        writeCSV();
+    }
+
+    void runPP()
+    {
+        omrc::PP p(si_);
+        p.setProblemDefinition(pdef_);
+
+        // time the planner's solve sequence
+        auto start = std::chrono::high_resolution_clock::now();
+        ob::PlannerStatus solved = p.as<omrb::Planner>()->solve(solveTime_);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        double duration_s = (duration_ms.count() * 0.001);
+
+        // save the relevant data
+        results_.insert({"PP Success (Bool)", std::to_string(solved == ob::PlannerStatus::EXACT_SOLUTION)});
+        results_.insert({"PP Computation Times (s)", std::to_string(duration_s)});
 
         // reset the problem definition
         pdef_->clearSolutionPaths();
