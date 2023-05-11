@@ -134,7 +134,7 @@ std::pair<omrc::SpaceInformationPtr, omrb::ProblemDefinitionPtr> setScene()
 
         // set the start and goal states
         pdef->addStartState(start);
-        pdef->setGoal(std::make_shared<GoalRegion2ndOrderCar>(si, goal_map.at(itr->first)));
+        pdef->setGoal(std::make_shared<GoalRegion2ndOrderCar>(si, goal_map.at(itr->first).first, goal_map.at(itr->first).second));
 
         // add the individual information to the multi-robot SpaceInformation and ProblemDefinition
         ma_si->addIndividual(si);
