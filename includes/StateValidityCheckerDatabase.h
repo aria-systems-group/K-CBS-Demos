@@ -35,15 +35,18 @@
 /* Author: Justin Kottinger */
 
 #include "Robot.h"
+#include "Obstacle.h"
 #include <ompl/control/SpaceInformation.h>
+#include <set>
 
 namespace ob = ompl::base;
 
 class homogeneous2ndOrderCarSystemSVC: public ob::StateValidityChecker
 {
 public:
-    homogeneous2ndOrderCarSystemSVC(const ob::SpaceInformationPtr &si, std::unordered_map<std::string, Robot*> robots): 
-        robot1_name_(si->getStateSpace()->getName()), robot1_(robots.at(robot1_name_)), rad1_(robot1_->getBoundingRadius()), robots_(robots), ob::StateValidityChecker(si)
+    homogeneous2ndOrderCarSystemSVC(const ob::SpaceInformationPtr &si, std::unordered_map<std::string, Robot*> robots, std::set<Obstacle*> obs_set = {}): 
+        robot1_name_(si->getStateSpace()->getName()), robot1_(robots.at(robot1_name_)), rad1_(robot1_->getBoundingRadius()), 
+        robots_(robots), ob::StateValidityChecker(si), obstacles_(obs_set)
     {
     }
 
@@ -52,6 +55,21 @@ public:
     {
         if (!si_->satisfiesBounds(state))
             return false;
+
+        // get the position of the robot
+        const double* this_pos = state->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+        for (auto o_itr = obstacles_.begin(); o_itr != obstacles_.end(); ++o_itr)
+        {
+            const double* other_pos = (*o_itr)->getCenterPoint();
+            const double other_rad = (*o_itr)->getBoundingRadius();
+            if (!performQuickCollisionCheck(this_pos, other_pos, other_rad))
+            {
+                // get the orientation of the robot
+                const double this_rot = state->as<ob::CompoundStateSpace::StateType>()->as<ob::SO2StateSpace::StateType>(1)->value;
+                if (!performExactCollisionCheck(this_pos, this_rot, other_pos, *o_itr))
+                    return false;
+            }
+        }
         return true;
     }
 
@@ -126,8 +144,37 @@ private:
             return true;
     }
 
+    // returns true if no collision
+    bool performExactCollisionCheck(const double* this_pos, const double this_rot, const double* other_pos, const Obstacle* obstacle) const
+    {
+        BoostPolygon poly1 = robot1_->getShape();
+        // use boost transform to create polygon at true robots location
+        BoostPolygon tmp1;
+        BoostPolygon result1;
+        boost::geometry::correct(tmp1);
+        boost::geometry::assign(tmp1, poly1);
+        boost::geometry::strategy::transform::matrix_transformer<double, 2, 2> xfrm1(
+                 cos(this_rot), sin(this_rot), this_pos[0],
+                -sin(this_rot), cos(this_rot), this_pos[1],
+                          0,          0,  1);
+        boost::geometry::transform(tmp1, result1, xfrm1);
+        boost::geometry::correct(result1);
+
+        auto exterior_points1 = boost::geometry::exterior_ring(result1);
+
+        BoostPolygon poly2 = obstacle->getShape();
+        boost::geometry::correct(poly2);
+
+        // check if resulting polygons are in collision
+        if (!boost::geometry::disjoint(result1, poly2))
+            return false;
+        else
+            return true;
+    }
+
     const std::string robot1_name_;
     const Robot* robot1_;
     const double rad1_;
     std::unordered_map<std::string, Robot*> robots_;
+    std::set<Obstacle*> obstacles_;
 };
