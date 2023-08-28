@@ -46,6 +46,7 @@
 #include <unordered_map>
 #include <math.h>
 #include <chrono>
+#include <thread>
 
 namespace omrb = ompl::multirobot::base;
 namespace omrc = ompl::multirobot::control;
@@ -171,7 +172,8 @@ void plan()
     // plan using Kinodynamic Conflict Based Search
     auto planner = std::make_shared<omrc::KCBS>(ma_si);
     planner->setProblemDefinition(ma_pdef); // be sure to set the problem definition
-    planner->setLowLevelSolveTime(5.);
+    planner->setLowLevelSolveTime(2.);
+    planner->setNumThreads(std::thread::hardware_concurrency());
 
     auto start = std::chrono::high_resolution_clock::now();
     bool solved = planner->as<omrb::Planner>()->solve(180.0);

@@ -170,7 +170,7 @@ void benchmark()
     b->setFileName("Benchmark1"); // optional -- default is "Results" (filetype is .csv)
 
     // run the benchmark
-    b->run();
+    b->runKCBS();
     b->writeCSV();
 }
 

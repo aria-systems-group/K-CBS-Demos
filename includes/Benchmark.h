@@ -43,6 +43,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <thread>
 
 namespace omrb = ompl::multirobot::base;
 namespace omrc = ompl::multirobot::control;
@@ -93,11 +94,12 @@ public:
         filename_ = name;
     }
 
-    void run()
+    void runKCBS()
     {
         omrc::KCBS p(si_);
         p.setProblemDefinition(pdef_);
         p.setLowLevelSolveTime(5.);
+        p.setNumThreads(std::thread::hardware_concurrency());
 
         // time the planner's solve sequence
         auto start = std::chrono::high_resolution_clock::now();
