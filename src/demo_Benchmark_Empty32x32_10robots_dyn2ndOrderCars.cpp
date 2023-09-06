@@ -166,23 +166,19 @@ void benchmark()
 
     // set optional params
     b->setSolveTime(180); // optional -- default is 300 seconds
-    b->setFileName("KCBS-Pruning-Empty32x32-10robots"); // optional -- default is "Results"
-
-    // set optional params
-    b->setSolveTime(180); // optional -- default is 300 seconds
-    // b->setNumberOfRuns(50); // optional -- default is 100 runs
 
     /* For benchmarking KCBS*/
-    // b->setFileName("KCBS-Baseline-Empty32x32-10robots"); // optional -- default is "Results"
-    // b->run();
+    b->setFileName("KCBS-multithreaded-test"); // optional -- default is "Results"
 
-    /* For benchmarking PP*/
-    b->setFileName("PP-Empty32x32-10robots"); // optional -- default is "Results"
-    b->runPP();
+    /* Perform a single KCBS run */
+    b->runKCBS();
+
+    /* Perform a single PP run */
+    // b->runPP();
 }
 
 int main(int argc, char ** argv)
 {
-    std::cout << "Benchmarking problem with 10 2nd order cars inside an Empty 32x32 workspace with K-CBS." << std::endl;
+    std::cout << "Benchmarking problem with 10 2nd order cars inside an Empty 32x32 workspace." << std::endl;
     benchmark();
 }
