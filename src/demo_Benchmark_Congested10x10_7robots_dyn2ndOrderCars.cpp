@@ -193,6 +193,6 @@ int main(int argc, char ** argv)
 {
     std::string plannerName = "K-CBS";
     // std::string plannerName = "PP";
-    std::cout << "Planning for 10 2nd order cars inside an Empty 32x32 workspace with " << plannerName << "." << std::endl;
+    std::cout << "Planning for 7 2nd order cars inside a Congested 10x10 workspace with " << plannerName << "." << std::endl;
     benchmark(plannerName);
 }
