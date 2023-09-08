@@ -4,6 +4,13 @@ CMakeCache.txt
 CMakeFiles/*
 Makefile
 cmake_install.cmake
-demo*
+demo_Benchmark_Empty32x32_10robots_dyn2ndOrderCars
+demo_Benchmark_Empty32x32_15robots_dyn2ndOrderCars
+demo_Benchmark_Empty32x32_20robots_dyn2ndOrderCars
+demo_Benchmark_Empty32x32_4robots_dyn2ndOrderCars
+demo_Congested10x10_7robots_dyn2ndOrderCars
+demo_Empty32x32_10robots_dyn2ndOrderCars
+demo_Empty32x32_15robots_dyn2ndOrderCars
+demo_Empty32x32_20robots_dyn2ndOrderCars
 *.txt
 *.csv
