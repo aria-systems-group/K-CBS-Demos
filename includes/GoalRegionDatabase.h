@@ -46,7 +46,7 @@ public:
     GoalRegion2ndOrderCar(const ob::SpaceInformationPtr &si, double gx, double gy): 
         ob::GoalRegion(si), gx_(gx), gy_(gy)
     {
-        threshold_ = 0.25;
+        threshold_ = 0.5;
     }
     
     double distanceGoal(const ob::State *st) const override
