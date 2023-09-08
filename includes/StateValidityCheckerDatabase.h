@@ -53,6 +53,7 @@ public:
     // Answers the question: is the robot described by `si_` at `state` valid?
     bool isValid(const ompl::base::State *state) const override
     {
+        // check if state is within bounds
         if (!si_->satisfiesBounds(state))
             return false;
 
