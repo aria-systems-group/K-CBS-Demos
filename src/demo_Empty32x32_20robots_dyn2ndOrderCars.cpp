@@ -43,6 +43,7 @@
 #include "PlannerAllocatorDatabase.h"
 
 #include <ompl/multirobot/control/planners/kcbs/KCBS.h>
+#include <ompl/multirobot/control/planners/pp/PP.h>
 #include <unordered_map>
 #include <math.h>
 #include <chrono>
@@ -53,7 +54,7 @@ namespace omrc = ompl::multirobot::control;
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 
-void plan()
+void plan(const std::string plannerName)
 {
     // provide start and goals for every robot
     const std::unordered_map<std::string, std::pair<int, int>> start_map{   {"Robot 0", {11, 6}}, 
@@ -160,20 +161,29 @@ void plan()
         ma_pdef->addIndividual(pdef);
     }
 
-    // lock the multi-robot SpaceInformation and ProblemDefinitions when done adding individuals
-    ma_si->lock();
-    ma_pdef->lock();
-
     // set the planner allocator for the multi-agent planner
     ompl::base::PlannerAllocator allocator = &allocateControlRRT;
     ma_si->setPlannerAllocator(allocator);
 
-    // plan with K-CBS
-    // plan using Kinodynamic Conflict Based Search
-    auto planner = std::make_shared<omrc::KCBS>(ma_si);
+    // lock the multi-robot SpaceInformation and ProblemDefinitions when done adding individuals
+    ma_si->lock();
+    ma_pdef->lock();
+
+    omrb::PlannerPtr planner = nullptr;
+    if (plannerName == "K-CBS")
+    {
+        // plan using Kinodynamic Conflict Based Search
+        planner = std::make_shared<omrc::KCBS>(ma_si);
+        planner->as<omrc::KCBS>()->setLowLevelSolveTime(5.);
+        planner->as<omrc::KCBS>()->setNumThreads(std::thread::hardware_concurrency());
+    }
+    else
+    {
+        // plan using Prioritized Planner
+        planner = std::make_shared<omrc::PP>(ma_si);
+    }
+
     planner->setProblemDefinition(ma_pdef); // be sure to set the problem definition
-    planner->setLowLevelSolveTime(5.);
-    planner->setNumThreads(std::thread::hardware_concurrency());
 
     auto start = std::chrono::high_resolution_clock::now();
     bool solved = planner->as<omrb::Planner>()->solve(180.0);
@@ -187,13 +197,19 @@ void plan()
         omrb::PlanPtr solution = ma_pdef->getSolutionPlan();
         std::ofstream MyFile("plan.txt");
         solution->as<omrc::PlanControl>()->printAsMatrix(MyFile, "Robot");
+    }
+
+    if (plannerName == "K-CBS")
+    {
         std::ofstream MyFile2("tree.txt");
-        planner->printConstraintTree(MyFile2);
+        planner->as<omrc::KCBS>()->printConstraintTree(MyFile2);
     }
 }
 
 int main(int argc, char ** argv)
 {
-    std::cout << "Planning for 20 2nd order cars inside an Empty 32x32 workspace with K-CBS." << std::endl;
-    plan();
+    std::string plannerName = "K-CBS";
+    // std::string plannerName = "PP";
+    std::cout << "Planning for 20 2nd order cars inside an Empty 32x32 workspace with " << plannerName << "." << std::endl;
+    plan(plannerName);
 }
