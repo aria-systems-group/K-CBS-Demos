@@ -55,11 +55,6 @@ namespace omrc = ompl::multirobot::control;
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 
-// std::pair<omrc::SpaceInformationPtr, omrb::ProblemDefinitionPtr> setScene()
-// {
-    
-// }
-
 void plan(const std::string plannerName)
 {
     // provide start and goals for every robot

@@ -176,9 +176,9 @@ void benchmark(const std::string plannerName)
     /* For benchmarking KCBS*/
     std::string results_string;
     if (plannerName == "K-CBS")
-        results_string = "KCBS-benchmark-Empty32x32-10robots";
+        results_string = "KCBS-benchmark-Congested10x10-7robots";
     else
-        results_string = "PP-benchmark-Empty32x32-10robots";
+        results_string = "PP-benchmark-Congested10x10-7robots";
     
     b->setFileName(results_string); // optional -- default is "Results"
 

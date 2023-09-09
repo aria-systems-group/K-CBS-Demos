@@ -203,8 +203,8 @@ void plan(const std::string plannerName)
 
 int main(int argc, char ** argv)
 {
-    // std::string plannerName = "K-CBS";
-    std::string plannerName = "PP";
+    std::string plannerName = "K-CBS";
+    // std::string plannerName = "PP";
     std::cout << "Planning for 6 2nd order cars inside a Congested 10x10 workspace with " << plannerName << "." << std::endl;
     plan(plannerName);
 }
