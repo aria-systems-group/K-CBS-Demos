@@ -41,20 +41,20 @@
 #include "StatePropagatorDatabase.h"
 #include "GoalRegionDatabase.h"
 #include "PlannerAllocatorDatabase.h"
+#include "Benchmark.h"
 
 #include <ompl/multirobot/control/planners/kcbs/KCBS.h>
 #include <ompl/multirobot/control/planners/pp/PP.h>
-#include <unordered_map>
+#include <map>
 #include <math.h>
-#include <chrono>
-#include <thread>
+#include <tuple>
 
 namespace omrb = ompl::multirobot::base;
 namespace omrc = ompl::multirobot::control;
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 
-void plan(const std::string plannerName)
+void benchmark(const std::string plannerName)
 {
     // provide start and goals for every robot
     const std::unordered_map<std::string, std::pair<int, int>> start_map{   {"Robot 0",     {11, 6}}, 
@@ -189,41 +189,28 @@ void plan(const std::string plannerName)
     ma_si->lock();
     ma_pdef->lock();
 
-    omrb::PlannerPtr planner = nullptr;
+    // instantiate the benchmark class and set the problem setting
+    auto b = std::make_shared<Benchmark>();
+    b->setSpaceInformation(ma_si);
+    b->setPoroblemDefinition(ma_pdef);
+
+    // set optional params
+    b->setSolveTime(180); // optional -- default is 300 seconds
+
+    /* For benchmarking KCBS*/
+    std::string results_string;
     if (plannerName == "K-CBS")
-    {
-        // plan using Kinodynamic Conflict Based Search
-        planner = std::make_shared<omrc::KCBS>(ma_si);
-        planner->as<omrc::KCBS>()->setLowLevelSolveTime(5.);
-        planner->as<omrc::KCBS>()->setNumThreads(std::thread::hardware_concurrency());
-    }
+        results_string = "KCBS-benchmark-Empty32x32-30robots";
     else
-    {
-        // plan using Prioritized Planner
-        planner = std::make_shared<omrc::PP>(ma_si);
-    }
+        results_string = "PP-benchmark-Empty32x32-30robots";
+    
+    b->setFileName(results_string); // optional -- default is "Results"
 
-    planner->setProblemDefinition(ma_pdef); // be sure to set the problem definition
-
-    auto start = std::chrono::high_resolution_clock::now();
-    bool solved = planner->as<omrb::Planner>()->solve(180.0);
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    double duration_s = (duration_ms.count() * 0.001);
-
-    if (solved)
-    {
-        printf("Found Solution in %0.2f seconds!\n", duration_s);
-        omrb::PlanPtr solution = ma_pdef->getSolutionPlan();
-        std::ofstream MyFile("plan.txt");
-        solution->as<omrc::PlanControl>()->printAsMatrix(MyFile, "Robot");
-    }
-
+    /* Perform a single planner run and save relevent data */
     if (plannerName == "K-CBS")
-    {
-        std::ofstream MyFile2("tree.txt");
-        planner->as<omrc::KCBS>()->printConstraintTree(MyFile2);
-    }
+        b->runKCBS();
+    else
+        b->runPP();
 }
 
 int main(int argc, char ** argv)
@@ -231,5 +218,5 @@ int main(int argc, char ** argv)
     std::string plannerName = "K-CBS";
     // std::string plannerName = "PP";
     std::cout << "Planning for 30 2nd order cars inside an Empty 32x32 workspace with " << plannerName << "." << std::endl;
-    plan(plannerName);
+    benchmark(plannerName);
 }
