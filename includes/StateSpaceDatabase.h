@@ -36,6 +36,7 @@
 
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/base/spaces/SO2StateSpace.h>
+#include <cmath>
 
 namespace ob = ompl::base;
 
@@ -57,6 +58,25 @@ ob::StateSpacePtr createBounded2ndOrderCarStateSpace(const unsigned int x_max, c
     bounds.setLow(3, -M_PI / 3);  // phi lower bound
     bounds.setHigh(3, M_PI / 3); // phi upper bound
     space->as<ob::CompoundStateSpace>()->as<ob::RealVectorStateSpace>(0)->setBounds(bounds);
+
+    return space;
+}
+
+ob::StateSpacePtr createBoundedLinearizedUnicycleStateSpace(const unsigned int x_max, const unsigned int y_max)
+{
+    ob::StateSpacePtr space = ob::StateSpacePtr(new ob::RealVectorStateSpace(4));
+    
+    // set the bounds for the RealVectorStateSpace 
+    ob::RealVectorBounds bounds(4);
+    bounds.setLow(0, 0); //  x lower bound
+    bounds.setHigh(0, x_max); // x upper bound
+    bounds.setLow(1, 0);  // y lower bound
+    bounds.setHigh(1, y_max); // y upper bound
+    bounds.setLow(2, -M_PI);  // yaw lower bound
+    bounds.setHigh(2, M_PI); // yaw upper bound
+    bounds.setLow(3, 0.01);  // surge lower bound
+    bounds.setHigh(3, 10.0); // surge upper bound
+    space->as<ob::RealVectorStateSpace>()->setBounds(bounds);
 
     return space;
 }

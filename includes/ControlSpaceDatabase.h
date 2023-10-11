@@ -52,3 +52,23 @@ oc::ControlSpacePtr createUniform2DRealVectorControlSpace(ob::StateSpacePtr &spa
 
     return cspace;
 }
+
+oc::ControlSpacePtr createLinearizedUnicycleControlSpace(ob::StateSpacePtr &space, const unsigned int x_max, const unsigned int y_max)
+{
+    auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 4));
+
+    // set the bounds for the RealVectorStateSpace 
+    ob::RealVectorBounds cbounds(4);
+    cbounds.setLow(0, 0); //  x lower bound
+    cbounds.setHigh(0, x_max); // x upper bound
+    cbounds.setLow(1, 0);  // y lower bound
+    cbounds.setHigh(1, y_max); // y upper bound
+    cbounds.setLow(2, -M_PI);  // yaw lower bound
+    cbounds.setHigh(2, M_PI); // yaw upper bound
+    cbounds.setLow(3, 0.01);  // surge lower bound
+    cbounds.setHigh(3, 10.0); // surge upper bound
+
+    cspace->setBounds(cbounds);
+
+    return cspace;
+}
