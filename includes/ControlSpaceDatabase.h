@@ -53,6 +53,19 @@ oc::ControlSpacePtr createUniform2DRealVectorControlSpace(ob::StateSpacePtr &spa
     return cspace;
 }
 
+oc::ControlSpacePtr createUniform4DRealVectorControlSpace(ob::StateSpacePtr &space)
+{
+    auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 4));
+    
+    // set the bounds for the control space
+    ob::RealVectorBounds cbounds(4);
+    cbounds.setLow(-1);
+    cbounds.setHigh(1);
+    cspace->setBounds(cbounds);
+
+    return cspace;
+}
+
 oc::ControlSpacePtr createLinearizedUnicycleControlSpace(ob::StateSpacePtr &space, const unsigned int x_max, const unsigned int y_max)
 {
     auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 4));

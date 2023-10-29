@@ -59,6 +59,41 @@ private:
     const double gy_;
 };
 
+class GoalRegionTwo2ndOrderCars: public ob::Goal
+{
+public:
+    GoalRegionTwo2ndOrderCars(const ob::SpaceInformationPtr &si, double gx1, double gy1, double gx2, double gy2): 
+        ob::Goal(si), gx1_(gx1), gy1_(gy1), gx2_(gx2), gy2_(gy2)
+    {
+    }
+
+    bool isSatisfied(const ob::State *st) const override
+    {
+    	// decompose the state
+    	const double* r1_pos = st->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+    	const double* r2_pos = st->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(2)->values;
+    	// check if both are in goal
+    	if (getDistance(r1_pos[0], r1_pos[1], gx1_, gy1_) < threshold_)
+    	{
+    		if (getDistance(r2_pos[0], r2_pos[1], gx2_, gy2_) < threshold_)
+    			return true;
+    	}
+    	return false;
+    }
+    
+    
+private:
+	const double getDistance(const double x, const double y, const double gx, const double gy) const
+	{
+		return sqrt(pow(x - gx, 2) + pow(y - gy, 2));
+	}
+    const double gx1_;
+    const double gy1_;
+    const double gx2_;
+    const double gy2_;
+    const double threshold_ = 1.0;
+};
+
 class LinearizedUnicycleGoalRegion: public ob::GoalRegion
 {
 public:

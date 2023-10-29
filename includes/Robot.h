@@ -49,6 +49,14 @@ class Robot
 {
 public:
     Robot(std::string name): name_(name) {};
+    /** \brief Cast this instance to a desired type. */
+    template <class T>
+    T *as()
+    {
+        /** \brief Make sure the type we are casting to is indeed a robot */
+        BOOST_CONCEPT_ASSERT((boost::Convertible<T *, Robot *>));
+        return static_cast<T *>(this);
+    }
     const std::string getName() const {return name_;};
     const BoostPolygon& getShape() const {return shape_;};
     const double getBoundingRadius() const {return bounding_radius_;};
@@ -93,6 +101,24 @@ public:
 private:
     const double length_;
     const double width_;
+};
+
+class CompoundRobot: public Robot
+{
+public:
+    CompoundRobot(std::string name, Robot* robot1, Robot* robot2):
+        robot1_(robot1), robot2_(robot2), Robot(name) {}
+    Robot* getRobot(unsigned int idx)
+    {
+        if (idx == 0)
+            return robot1_;
+        else if (idx == 1)
+            return robot2_;
+        return nullptr;
+    }
+private:
+    Robot* robot1_;
+    Robot* robot2_;
 };
 
 
