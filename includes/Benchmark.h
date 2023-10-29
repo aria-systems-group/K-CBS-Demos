@@ -84,6 +84,11 @@ public:
         solveTime_ = t;
     }
 
+    void setKCBSMergeBound(int value)
+    {
+        merge_bound_ = value;
+    }
+
     void setNumberOfRuns(const unsigned int n)
     {
         numRuns_ = n;
@@ -100,6 +105,7 @@ public:
         p.setProblemDefinition(pdef_);
         p.setLowLevelSolveTime(5.);
         p.setNumThreads(std::thread::hardware_concurrency());
+        p.setMergeBound(merge_bound_);
 
         // time the planner's solve sequence
         auto start = std::chrono::high_resolution_clock::now();
@@ -172,6 +178,7 @@ private:
     std::vector<omrb::PlannerPtr> planners_;
     double solveTime_;
     unsigned int numRuns_;
+    int merge_bound_ = std::numeric_limits<int>::max();
     std::string filename_;
     std::map<std::string, std::string> results_;
 };

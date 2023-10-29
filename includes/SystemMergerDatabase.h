@@ -164,11 +164,6 @@ public:
     	ompl::base::PlannerAllocator allocator = &allocateControlRRT;
     	merged_si->setPlannerAllocator(allocator);
 
-    	for (unsigned int idx = 0; idx < merged_si->getIndividualCount(); idx++)
-    	{
-    		std::cout << merged_si->getIndividual(idx)->getStateSpace()->getName() << std::endl;
-    	}
-
 		return {merged_si, merged_pdef};
 	}
 
