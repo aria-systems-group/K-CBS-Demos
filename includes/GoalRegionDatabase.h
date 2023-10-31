@@ -80,8 +80,25 @@ public:
     	}
     	return false;
     }
-    
-    
+
+    bool isSatisfied(const ob::State *st, double *distance) const override
+    {
+        *distance = 0;
+        // decompose the state
+        const double* r1_pos = st->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+        const double* r2_pos = st->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(2)->values;
+        double d1 = getDistance(r1_pos[0], r1_pos[1], gx1_, gy1_);
+        double d2 = getDistance(r2_pos[0], r2_pos[1], gx2_, gy2_);
+        // check if both are in goal while updating distance
+        if (d1 > threshold_)
+            *distance += d1;
+        if (d2 > threshold_)
+            *distance += d2;
+        if (*distance == 0)
+            return true;
+        return false;
+    }
+ 
 private:
 	const double getDistance(const double x, const double y, const double gx, const double gy) const
 	{
@@ -91,7 +108,7 @@ private:
     const double gy1_;
     const double gx2_;
     const double gy2_;
-    const double threshold_ = 1.0;
+    const double threshold_ = 1.5;
 };
 
 class LinearizedUnicycleGoalRegion: public ob::GoalRegion

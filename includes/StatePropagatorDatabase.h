@@ -172,7 +172,7 @@ private:
     const double gy1_;
     const double gx2_;
     const double gy2_;
-    const double threshold_ = 1.0;
+    const double threshold_ = 1.5;
 };
 
 class LinearizedUnicycleDynamics : public oc::StatePropagator 
