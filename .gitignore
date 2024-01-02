@@ -20,5 +20,6 @@ demo_Empty32x32_40robots_dyn2ndOrderCars
 demo_Empty32x32_50robots_dyn2ndOrderCars
 demo_Empty32x32_60robots_dyn2ndOrderCars
 demo_Random32x32_10robots_LinearizedUnicycle
+demo_Corridor10x10_4robots_dyn2ndOrderCars
 *.txt
 *.csv
