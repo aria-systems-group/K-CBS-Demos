@@ -37,15 +37,12 @@
 #pragma once
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/geometry/geometries/point_xyz.hpp>
 #include <boost/geometry/algorithms/correct.hpp>
 #include <boost/geometry/strategies/transform/matrix_transformers.hpp>
 #include <stdio.h>
 
 typedef boost::geometry::model::d2::point_xy<double> BoostPoint;
 typedef boost::geometry::model::polygon<BoostPoint, false, true> BoostPolygon;
-typedef boost::geometry::model::d3::point_xyz<double> BoostPoint3D;
-typedef boost::geometry::model::polygon<BoostPoint3D, false, true> BoostPolygon3D;
 
 /*
 * ***************************************************************
@@ -158,7 +155,6 @@ public:
     const double getHeight() const {return height_;};
 private:
     const double height_;
-    BoostPolygon3D shape3D_;
 };
 
 
