@@ -78,7 +78,7 @@ void plan(const std::string plannerName)
                                                                             {"Robot 16",    {2, 8}},
                                                                             {"Robot 17",    {18, 18}},
                                                                             {"Robot 18",    {30, 24}},
-                                                                            {"Robot 19",    {12, 24}},
+                                                                            // {"Robot 19",    {12, 24}},
                                                                         };
 
     const std::unordered_map<std::string, std::pair<int, int>> goal_map {   {"Robot 0",     {20, 30}}, 
@@ -100,7 +100,7 @@ void plan(const std::string plannerName)
                                                                             {"Robot 16",    {11, 3}},
                                                                             {"Robot 17",    {16, 28}},
                                                                             {"Robot 18",    {22, 10}},
-                                                                            {"Robot 19",    {22, 14}},
+                                                                            // {"Robot 19",    {22, 14}},
                                                                         };
 
     const std::unordered_map<std::string, std::string> dynamics_map     {   {"Robot 0",     "Drone"}, 
@@ -122,26 +122,26 @@ void plan(const std::string plannerName)
                                                                             {"Robot 16",     "Car"},
                                                                             {"Robot 17",     "Car"},
                                                                             {"Robot 18",     "Car"},
-                                                                            {"Robot 19",     "Car"},
+                                                                            // {"Robot 19",     "Car"},
                                                                         };
     // provide obstacles
     std::set<Obstacle*> obs_set;
-    // auto obs1 = new RectangularObstacle3D(20, 25, 2, 2, 1); // lower_left_x. lower_left_y, length, width, height
-    // auto obs2 = new RectangularObstacle3D(5, 2, 1, 1, 2);
-    // auto obs3 = new RectangularObstacle3D(4, 14, 1, 1, 2);
-    // auto obs4 = new RectangularObstacle3D(19, 5, 1, 1, 2);
-    // auto obs5 = new RectangularObstacle3D(29, 0, 1, 2, 2);
+    auto obs1 = new RectangularObstacle3D(20, 25, 2, 2, 1); // lower_left_x. lower_left_y, length, width, height
+    auto obs2 = new RectangularObstacle3D(5, 2, 1, 1, 2);
+    auto obs3 = new RectangularObstacle3D(4, 14, 1, 1, 2);
+    auto obs4 = new RectangularObstacle3D(19, 5, 1, 1, 2);
+    auto obs5 = new RectangularObstacle3D(29, 0, 1, 2, 2);
     // auto obs6 = new RectangularObstacle3D(30, 31, 2, 2, 1);
     // auto obs7 = new RectangularObstacle3D(7, 14, 2, 2, 2);
     // auto obs8 = new RectangularObstacle3D(15, 31, 2, 1, 1);
     // auto obs9 = new RectangularObstacle3D(12, 25, 2, 1, 1);
     // auto obs10 = new RectangularObstacle3D(17, 0, 1, 2, 2);
     // auto obs11 = new RectangularObstacle3D(8, 22, 1, 2, 1);
-    // obs_set.insert(obs1);
-    // obs_set.insert(obs2);
-    // obs_set.insert(obs3);
-    // obs_set.insert(obs4);
-    // obs_set.insert(obs5);
+    obs_set.insert(obs1);
+    obs_set.insert(obs2);
+    obs_set.insert(obs3);
+    obs_set.insert(obs4);
+    obs_set.insert(obs5);
     // obs_set.insert(obs6);
     // obs_set.insert(obs7);
     // obs_set.insert(obs8);
