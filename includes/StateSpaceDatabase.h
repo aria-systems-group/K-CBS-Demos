@@ -108,3 +108,31 @@ ob::StateSpacePtr createBoundedLinearizedUnicycleStateSpace(const unsigned int x
 
     return space;
 }
+
+ob::StateSpacePtr createBoundedDroneStateSpace(const unsigned int x_max, const unsigned int y_max, const unsigned int z_max)
+{
+    /*
+    State & Input Definition 
+    x = [x, y, z, v, \theta, \phi]' (phi lives in SO2)
+    u = [a, \alpha, \omega]
+    */
+    ob::StateSpacePtr space = std::make_shared<ob::CompoundStateSpace>();
+    space->as<ob::CompoundStateSpace>()->addSubspace(ob::StateSpacePtr(new ob::RealVectorStateSpace(5)), 1.0);
+    space->as<ob::CompoundStateSpace>()->addSubspace(ob::StateSpacePtr(new ob::SO2StateSpace()), 1.0);
+    space->as<ob::CompoundStateSpace>()->lock();
+    
+    // set the bounds for the RealVectorStateSpace 
+    ob::RealVectorBounds bounds(5);
+    bounds.setLow(0, 0); //  x lower bound
+    bounds.setHigh(0, x_max); // x upper bound
+    bounds.setLow(1, 0);  // y lower bound
+    bounds.setHigh(1, y_max); // y upper bound
+    bounds.setLow(2, 0);  // y lower bound
+    bounds.setHigh(2, z_max); // z upper bound
+    bounds.setLow(3, -1);  // v lower bound
+    bounds.setHigh(3, 1); // v upper bound
+    bounds.setLow(4, -M_PI / 3);  // theta lower bound
+    bounds.setHigh(4, M_PI / 3); // theta upper bound
+    space->as<ob::CompoundStateSpace>()->as<ob::RealVectorStateSpace>(0)->setBounds(bounds);
+    return space;
+}

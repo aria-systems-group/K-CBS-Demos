@@ -329,3 +329,36 @@ class LinearizedUnicycleDynamics : public oc::StatePropagator
         Eigen::Matrix4d R;
 };
 
+void SimplifiedDroneODE (const oc::ODESolver::StateType& q, const oc::Control* control, oc::ODESolver::StateType& qdot)
+{
+    /*
+    State & Input Definition 
+    x = [x, y, z, v, \theta, \phi]' (phi lives in SO2)
+    xDot = [xDot, yDot, zDot, \thetaDot, \phiDot]'
+    u = [a, \alpha, \omega]
+    */
+
+    const double *u = control->as<oc::RealVectorControlSpace::ControlType>()->values;
+    // state params
+    const double x = q[0];
+    const double y = q[1];
+    const double z = q[2];
+    const double v = q[3];
+    const double theta = q[4];
+    const double phi = q[5];
+    const double a = u[0];
+    const double alpha = u[1];
+    const double omega = u[2];
+
+    // Zero out qdot
+    qdot.resize (q.size (), 0);
+ 
+    // vehicle model
+    qdot[0] = v * cos(phi) * cos(theta); // xDot
+    qdot[1] = v * sin(phi) * cos(theta); // yDot
+    qdot[2] = v * sin(theta); // zDot
+    qdot[3] = a; // vDot
+    qdot[4] = alpha; // \thetaDot
+    qdot[5] = omega; // \phiDot
+}
+

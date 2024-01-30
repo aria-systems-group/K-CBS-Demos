@@ -129,3 +129,38 @@ private:
     const double gx_;
     const double gy_;
 };
+
+class GoalRegionSimplifiedDrone: public ob::Goal
+{
+public:
+    GoalRegionSimplifiedDrone(const ob::SpaceInformationPtr &si, double gx, double gy, double gz): 
+        ob::Goal(si), gx_(gx), gy_(gy), gz_(gz)
+    {
+    }
+
+    bool isSatisfied(const ob::State *st) const override
+    {
+        const double* robot_pos = st->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+        int xyDistance = sqrt( pow(robot_pos[0] - gx_, 2) + pow(robot_pos[1] - gy_, 2) );
+        if (xyDistance < xyTol) {
+            if (robot_pos[2] < heightTol) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool isSatisfied(const ob::State *st, double *distance) const override
+    {
+        const double* robot_pos = st->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+        *distance = sqrt(pow(robot_pos[0] - gx_, 2) + pow(robot_pos[1] - gy_, 2) + pow(robot_pos[2] - gz_, 2));
+        return isSatisfied(st);
+    }
+ 
+private:
+    const double gx_;
+    const double gy_;
+    const double gz_;
+    const double xyTol = 0.5;
+    const double heightTol = 0.5;
+};

@@ -85,3 +85,26 @@ oc::ControlSpacePtr createLinearizedUnicycleControlSpace(ob::StateSpacePtr &spac
 
     return cspace;
 }
+
+oc::ControlSpacePtr createDroneControlSpace(ob::StateSpacePtr &space)
+{
+    /*
+    State & Input Definition 
+    x = [x, y, z, v, \theta, \phi]'
+    u = [a, \alpha, \omega]
+    */
+    auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 3));
+    
+    // set the bounds for the control space
+    ob::RealVectorBounds cbounds(3);
+    cbounds.setLow(0, -1);
+    cbounds.setHigh(0, 1);
+    cbounds.setLow(1, -M_PI / 3);
+    cbounds.setHigh(1, M_PI / 3);
+    cbounds.setLow(2, -M_PI / 3);
+    cbounds.setHigh(2, M_PI / 3);
+    
+    cspace->setBounds(cbounds);
+
+    return cspace;
+}

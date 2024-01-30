@@ -50,6 +50,13 @@ class Obstacle
 {
 public:
     Obstacle() {};
+    template <class T>
+    T *as()
+    {
+        /** \brief Make sure the type we are casting to is indeed a robot */
+        BOOST_CONCEPT_ASSERT((boost::Convertible<T*, Obstacle*>));
+        return static_cast<T*>(this);
+    }
     const BoostPolygon& getShape() const {return shape_;};
     const double getBoundingRadius() const {return bounding_radius_;};
     const double* getCenterPoint() const { return center_;};
@@ -97,6 +104,16 @@ public:
 private:
     const double length_;
     const double width_;
+};
+
+class RectangularObstacle3D: public RectangularObstacle
+{
+public:
+    RectangularObstacle3D(const double x, const double y, const double length, const double width, const double height):
+        height_(height), RectangularObstacle(x, y, length, width) {}
+    double getHeight() {return height_;};
+private:
+    const double height_;
 };
 
 

@@ -37,12 +37,21 @@
 #pragma once
 #include <boost/geometry/geometries/geometries.hpp>
 #include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/point_xyz.hpp>
 #include <boost/geometry/algorithms/correct.hpp>
 #include <boost/geometry/strategies/transform/matrix_transformers.hpp>
 #include <stdio.h>
 
 typedef boost::geometry::model::d2::point_xy<double> BoostPoint;
 typedef boost::geometry::model::polygon<BoostPoint, false, true> BoostPolygon;
+typedef boost::geometry::model::d3::point_xyz<double> BoostPoint3D;
+typedef boost::geometry::model::polygon<BoostPoint3D, false, true> BoostPolygon3D;
+
+/*
+* ***************************************************************
+* ********************* 2D Robot Definitions ********************
+* ***************************************************************
+*/
 
 // A Robot has a name and shape
 class Robot
@@ -69,10 +78,13 @@ public:
             printf("\t- Point(%0.2f, %0.2f)\n", boost::geometry::get<0>(exterior_points[i]), boost::geometry::get<1>(exterior_points[i]));
         }
     }
+    void setDynamics(std::string s) {dynamics_ = s;}
+    std::string getDynamics() const {return dynamics_;};
 protected:
     const std::string name_;
     BoostPolygon shape_; // assumed to be centered at origin
     double bounding_radius_;
+    std::string dynamics_;
 };
 
 // a rectangular robot class
@@ -120,5 +132,34 @@ private:
     Robot* robot1_;
     Robot* robot2_;
 };
+
+/*
+* ***************************************************************
+* ********************* 3D Robot Definitions ********************
+* ***************************************************************
+*/
+
+// a rectangular robot class in 3D
+/*
+// IMPORTANT NOTE: Apparently, Boost does not support intersection / disjoint operations
+	with 3d points (e.g. https://stackoverflow.com/questions/49006155/how-to-intersection-to-3d-polygons-by-boost-c-library).
+	Therefore, this class still contains a 2D polygon, but the robot has a height h>0 that is used in collision checking
+	rather than simply checking the intersection of two 3D polygons. height is defined as the "max vertical distance from center
+    of the robot." (e.g. a 1x1x1 robot would have height == 0.5)
+*/
+class RectangularRobot3D: public RectangularRobot 
+{
+public:
+    RectangularRobot3D(std::string name, const double length, const double width, const double height):
+        height_(height), RectangularRobot(name, length, width)
+    {
+        
+    };
+    const double getHeight() const {return height_;};
+private:
+    const double height_;
+    BoostPolygon3D shape3D_;
+};
+
 
 

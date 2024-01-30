@@ -505,3 +505,220 @@ private:
     std::unordered_map<std::string, Robot*> robots_;
     std::set<Obstacle*> obstacles_;
 };
+
+class heterogeneousSystemIn3DStateValidityChecker: public ob::StateValidityChecker
+{
+public:
+    heterogeneousSystemIn3DStateValidityChecker(const ob::SpaceInformationPtr &si, std::unordered_map<std::string, Robot*> robots, std::set<Obstacle*> obs_set = {}): 
+        robot1_name_(si->getStateSpace()->getName()), robot1_(robots.at(robot1_name_)), rad1_(robot1_->getBoundingRadius()), 
+        robots_(robots), ob::StateValidityChecker(si), obstacles_(obs_set)
+    {
+    }
+
+    // Answers the question: is the robot described by `si_` at `state` valid?
+    bool isValid(const ompl::base::State *state) const override
+    {
+        // check if state is within bounds
+        if (!si_->satisfiesBounds(state))
+            return false;
+
+        // get the 3D position of the robot
+        const double* this_pos = state->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+        const double boundingRadius = robot1_->getBoundingRadius();
+        if (robot1_->getDynamics() == "Drone") {
+            // need to perform 3D check
+            for (auto o_itr = obstacles_.begin(); o_itr != obstacles_.end(); ++o_itr)
+            {
+                // check height first -- if drone is above obs, then no need to do anything else
+                int droneHeight = this_pos[2] - boundingRadius; // height from center - bounding radius == height of Drone bottom
+                if (droneHeight <= (*o_itr)->as<RectangularObstacle3D>()->getHeight()) {
+                    // need to perform 2D check
+                    const double* other_pos = (*o_itr)->getCenterPoint();
+                    const double other_rad = (*o_itr)->getBoundingRadius();
+                    if (!performQuickCollisionCheck(this_pos, other_pos, other_rad)) {
+                        return false; // is conservative but OK for my examples
+                    }
+                }
+            }
+        }
+        else {
+            // can perform 2D check
+            // get the position of the robot
+            const double* this_pos = state->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+            for (auto o_itr = obstacles_.begin(); o_itr != obstacles_.end(); ++o_itr)
+            {
+                const double* other_pos = (*o_itr)->getCenterPoint();
+                const double other_rad = (*o_itr)->getBoundingRadius();
+                if (!performQuickCollisionCheck(this_pos, other_pos, other_rad))
+                {
+                    // get the orientation of the robot
+                    const double this_rot = state->as<ob::CompoundStateSpace::StateType>()->as<ob::SO2StateSpace::StateType>(1)->value;
+                    if (!performExactCollisionCheck(this_pos, this_rot, other_pos, *o_itr))
+                        return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Answers the question: does the robot described by `si_` at `state1` avoid collision with some other robot described by a different `si` located at `state2`?
+    bool areStatesValid(const ompl::base::State* state1, const std::pair<const ompl::base::SpaceInformationPtr,const ompl::base::State*> state2) const override
+    {
+        
+
+        // this proceedure will change based on the pair of robots being checked
+        Robot* robot2 = robots_.at(state2.first->getStateSpace()->getName());
+        const std::string dyn1 = robot1_->getDynamics();
+        const std::string dyn2 = robot2->getDynamics();
+
+        if (dyn1 == "Drone" && dyn2 == "Drone") {
+            // perform quick 3d collision check
+            double* drone1State = state1->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+            double* drone2State = state2.second->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+            return performQuickCollisionCheck3D(drone1State, drone2State, robot2->getBoundingRadius());
+
+        }
+        else if ( (dyn1 == "Drone" && dyn2 == "Car") ) {
+            // first, check if drone is "above" the car
+            // if so, return true
+            // else, perform quick collision check
+            double* droneState = state1->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+            const double droneHeight = robot1_->as<RectangularRobot3D>()->getHeight();
+            double* carState = state2.second->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+            const double carHeight = robot2->as<RectangularRobot3D>()->getHeight();
+
+            if (droneState[2] - droneHeight < carHeight) {
+                // need to check for 2D collision
+                return performQuickCollisionCheck(carState, droneState, robot2->getBoundingRadius());
+            }
+            return true; // drone is above the car -- no collision possible
+        }
+        else if ( (dyn1 == "Car" && dyn2 == "Drone" ) ) {
+            // first, check if drone is "above" the car
+            // if so, return true
+            // else, perform quick collision check
+            double* droneState = state2.second->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+            const double droneHeight = robot2->as<RectangularRobot3D>()->getHeight();
+            double* carState = state1->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+            const double carHeight = robot1_->as<RectangularRobot3D>()->getHeight();
+
+            if (droneState[2] - droneHeight < carHeight) {
+                // need to check for 2D collision
+                return performQuickCollisionCheck(carState, droneState, robot2->getBoundingRadius());
+            }
+            return true; // drone is above the car -- no collision possible
+        }
+        else if (dyn1 == "Car" && dyn2 == "Car") {
+            // perform 2D check as usual
+            double* car1State = state1->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+            double* car2State = state2.second->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+            if (!performQuickCollisionCheck(car1State, car2State, robot2->getBoundingRadius())) {
+                double car1Rot = state1->as<ob::CompoundStateSpace::StateType>()->as<ob::SO2StateSpace::StateType>(1)->value;
+                double car2Rot = state2.second->as<ob::CompoundStateSpace::StateType>()->as<ob::SO2StateSpace::StateType>(1)->value;
+                return performExactCollisionCheck(car1State, car1Rot, car2State, car2Rot, robot2);
+            }
+
+        }
+        return true;
+    }
+
+private:
+    // returns true if no collision is possible (i.e. robots are too far away to collide)
+    bool performQuickCollisionCheck3D(const double* this_pos, const double* other_pos, const double other_rad) const
+    {
+        // check if 2D distance is greater than the combined radii
+        const double distance = sqrt(pow(this_pos[0] - other_pos[0], 2) + pow(this_pos[1] - other_pos[1], 2) + pow(this_pos[2] - other_pos[2], 2));
+        if (distance > (rad1_ + other_rad)){
+            return true;
+        }
+        else
+            return false;
+    }
+
+    // returns true if no collision is possible (i.e. robots are too far away to collide)
+    bool performQuickCollisionCheck(const double* this_pos, const double* other_pos, const double other_rad) const
+    {
+        // check if 2D distance is greater than the combined radii
+        const double distance = sqrt(pow(this_pos[0] - other_pos[0], 2) + pow(this_pos[1] - other_pos[1], 2));
+        if (distance > (rad1_ + other_rad)){
+            return true;
+        }
+        else
+            return false;
+    }
+
+    // returns true if no collision
+    bool performExactCollisionCheck(const double* this_pos, const double this_rot, const double* other_pos, const double other_rot, const Robot* other_robot) const
+    {
+        // only used for 2D collision checking!
+        BoostPolygon poly1 = robot1_->getShape();
+        // use boost transform to create polygon at true robots location
+        BoostPolygon tmp1;
+        BoostPolygon result1;
+        boost::geometry::correct(tmp1);
+        boost::geometry::assign(tmp1, poly1);
+        boost::geometry::strategy::transform::matrix_transformer<double, 2, 2> xfrm1(
+                 cos(this_rot), sin(this_rot), this_pos[0],
+                -sin(this_rot), cos(this_rot), this_pos[1],
+                          0,          0,  1);
+        boost::geometry::transform(tmp1, result1, xfrm1);
+        boost::geometry::correct(result1);
+
+        BoostPolygon poly2 = other_robot->getShape();
+        // use boost transform to create polygon at true robots location
+        BoostPolygon tmp2;
+        BoostPolygon result2;
+        boost::geometry::correct(tmp2);
+        boost::geometry::assign(tmp2, poly2);
+        boost::geometry::strategy::transform::matrix_transformer<double, 2, 2> xfrm2(
+                 cos(other_rot), sin(other_rot), other_pos[0],
+                -sin(other_rot), cos(other_rot), other_pos[1],
+                          0,          0,  1);
+        boost::geometry::transform(tmp2, result2, xfrm2);
+        boost::geometry::correct(result2);
+
+        // check if resulting polygons are in collision
+        if (!boost::geometry::disjoint(result1, result2))
+            return false;
+        else
+            return true;
+        return false;
+    }
+
+    // returns true if no collision
+    bool performExactCollisionCheck(const double* this_pos, const double this_rot, const double* other_pos, const Obstacle* obstacle) const
+    {
+        // only used for 2D collision checking!
+        BoostPolygon poly1 = robot1_->getShape();
+        // use boost transform to create polygon at true robots location
+        BoostPolygon tmp1;
+        BoostPolygon result1;
+        boost::geometry::correct(tmp1);
+        boost::geometry::assign(tmp1, poly1);
+        boost::geometry::strategy::transform::matrix_transformer<double, 2, 2> xfrm1(
+                 cos(this_rot), sin(this_rot), this_pos[0],
+                -sin(this_rot), cos(this_rot), this_pos[1],
+                          0,          0,  1);
+        boost::geometry::transform(tmp1, result1, xfrm1);
+        boost::geometry::correct(result1);
+
+        auto exterior_points1 = boost::geometry::exterior_ring(result1);
+
+        BoostPolygon poly2 = obstacle->getShape();
+        boost::geometry::correct(poly2);
+
+        // check if resulting polygons are in collision
+        if (!boost::geometry::disjoint(result1, poly2))
+            return false;
+        else
+            return true;
+        return false;
+    }
+
+    const std::string robot1_name_;
+    Robot* robot1_;
+    const double rad1_;
+    std::unordered_map<std::string, Robot*> robots_;
+    std::set<Obstacle*> obstacles_;
+};
+
