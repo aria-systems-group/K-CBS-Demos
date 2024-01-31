@@ -41,6 +41,7 @@
 #include "StatePropagatorDatabase.h"
 #include "GoalRegionDatabase.h"
 #include "PlannerAllocatorDatabase.h"
+#include "SystemMergerDatabase.h"
 #include "Benchmark.h"
 
 #include <ompl/multirobot/control/planners/kcbs/KCBS.h>
@@ -159,6 +160,10 @@ void benchmark(const std::string plannerName)
     ompl::base::PlannerAllocator allocator = &allocateControlRRT;
     ma_si->setPlannerAllocator(allocator);
 
+    // set the system merger
+    omrc::SystemMergerPtr merger = std::make_shared<homogeneous2ndOrderCarSystemMerger>(ma_si, ma_pdef, robot_map, obs_set, 10, start_map, goal_map);
+    ma_si->setSystemMerger(merger);
+
     // lock the multi-robot SpaceInformation and ProblemDefinitions when done adding individuals
     ma_si->lock();
     ma_pdef->lock();
@@ -170,6 +175,7 @@ void benchmark(const std::string plannerName)
 
     // set optional params
     b->setSolveTime(180); // optional -- default is 300 seconds
+    b->setKCBSMergeBound(20); // optional -- default is std::max
 
     /* For benchmarking KCBS*/
     std::string results_string;

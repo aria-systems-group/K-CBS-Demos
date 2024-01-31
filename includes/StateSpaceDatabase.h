@@ -62,6 +62,34 @@ ob::StateSpacePtr createBounded2ndOrderCarStateSpace(const unsigned int x_max, c
     return space;
 }
 
+ob::StateSpacePtr createBoundedTwo2ndOrderCarStateSpace(const unsigned int x_max, const unsigned int y_max)
+{
+    ob::StateSpacePtr space = std::make_shared<ob::CompoundStateSpace>();
+    // robot 1
+    space->as<ob::CompoundStateSpace>()->addSubspace(ob::StateSpacePtr(new ob::RealVectorStateSpace(4)), 1.0);
+    space->as<ob::CompoundStateSpace>()->addSubspace(ob::StateSpacePtr(new ob::SO2StateSpace()), 1.0);
+    // robot 2
+    space->as<ob::CompoundStateSpace>()->addSubspace(ob::StateSpacePtr(new ob::RealVectorStateSpace(4)), 1.0);
+    space->as<ob::CompoundStateSpace>()->addSubspace(ob::StateSpacePtr(new ob::SO2StateSpace()), 1.0);
+    // lock
+    space->as<ob::CompoundStateSpace>()->lock();
+    
+    // set the bounds for the RealVectorStateSpace 
+    ob::RealVectorBounds bounds(4);
+    bounds.setLow(0, 0); //  x lower bound
+    bounds.setHigh(0, x_max); // x upper bound
+    bounds.setLow(1, 0);  // y lower bound
+    bounds.setHigh(1, y_max); // y upper bound
+    bounds.setLow(2, -1);  // v lower bound
+    bounds.setHigh(2, 1); // v upper bound
+    bounds.setLow(3, -M_PI / 3);  // phi lower bound
+    bounds.setHigh(3, M_PI / 3); // phi upper bound
+    space->as<ob::CompoundStateSpace>()->as<ob::RealVectorStateSpace>(0)->setBounds(bounds);
+    space->as<ob::CompoundStateSpace>()->as<ob::RealVectorStateSpace>(2)->setBounds(bounds);
+    
+    return space;
+}
+
 ob::StateSpacePtr createBoundedLinearizedUnicycleStateSpace(const unsigned int x_max, const unsigned int y_max)
 {
     ob::StateSpacePtr space = ob::StateSpacePtr(new ob::RealVectorStateSpace(4));
@@ -78,5 +106,33 @@ ob::StateSpacePtr createBoundedLinearizedUnicycleStateSpace(const unsigned int x
     bounds.setHigh(3, 10.0); // surge upper bound
     space->as<ob::RealVectorStateSpace>()->setBounds(bounds);
 
+    return space;
+}
+
+ob::StateSpacePtr createBoundedDroneStateSpace(const unsigned int x_max, const unsigned int y_max, const unsigned int z_max)
+{
+    /*
+    State & Input Definition 
+    x = [x, y, z, v, \theta, \phi]' (phi lives in SO2)
+    u = [a, \alpha, \omega]
+    */
+    ob::StateSpacePtr space = std::make_shared<ob::CompoundStateSpace>();
+    space->as<ob::CompoundStateSpace>()->addSubspace(ob::StateSpacePtr(new ob::RealVectorStateSpace(5)), 1.0);
+    space->as<ob::CompoundStateSpace>()->addSubspace(ob::StateSpacePtr(new ob::SO2StateSpace()), 1.0);
+    space->as<ob::CompoundStateSpace>()->lock();
+    
+    // set the bounds for the RealVectorStateSpace 
+    ob::RealVectorBounds bounds(5);
+    bounds.setLow(0, 0); //  x lower bound
+    bounds.setHigh(0, x_max); // x upper bound
+    bounds.setLow(1, 0);  // y lower bound
+    bounds.setHigh(1, y_max); // y upper bound
+    bounds.setLow(2, 0);  // y lower bound
+    bounds.setHigh(2, z_max); // z upper bound
+    bounds.setLow(3, -1);  // v lower bound
+    bounds.setHigh(3, 1); // v upper bound
+    bounds.setLow(4, -M_PI / 3);  // theta lower bound
+    bounds.setHigh(4, M_PI / 3); // theta upper bound
+    space->as<ob::CompoundStateSpace>()->as<ob::RealVectorStateSpace>(0)->setBounds(bounds);
     return space;
 }

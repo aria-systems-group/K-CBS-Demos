@@ -53,6 +53,19 @@ oc::ControlSpacePtr createUniform2DRealVectorControlSpace(ob::StateSpacePtr &spa
     return cspace;
 }
 
+oc::ControlSpacePtr createUniform4DRealVectorControlSpace(ob::StateSpacePtr &space)
+{
+    auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 4));
+    
+    // set the bounds for the control space
+    ob::RealVectorBounds cbounds(4);
+    cbounds.setLow(-1);
+    cbounds.setHigh(1);
+    cspace->setBounds(cbounds);
+
+    return cspace;
+}
+
 oc::ControlSpacePtr createLinearizedUnicycleControlSpace(ob::StateSpacePtr &space, const unsigned int x_max, const unsigned int y_max)
 {
     auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 4));
@@ -68,6 +81,29 @@ oc::ControlSpacePtr createLinearizedUnicycleControlSpace(ob::StateSpacePtr &spac
     cbounds.setLow(3, 0.01);  // surge lower bound
     cbounds.setHigh(3, 10.0); // surge upper bound
 
+    cspace->setBounds(cbounds);
+
+    return cspace;
+}
+
+oc::ControlSpacePtr createDroneControlSpace(ob::StateSpacePtr &space)
+{
+    /*
+    State & Input Definition 
+    x = [x, y, z, v, \theta, \phi]'
+    u = [a, \alpha, \omega]
+    */
+    auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 3));
+    
+    // set the bounds for the control space
+    ob::RealVectorBounds cbounds(3);
+    cbounds.setLow(0, -1);
+    cbounds.setHigh(0, 1);
+    cbounds.setLow(1, -M_PI / 3);
+    cbounds.setHigh(1, M_PI / 3);
+    cbounds.setLow(2, -M_PI / 3);
+    cbounds.setHigh(2, M_PI / 3);
+    
     cspace->setBounds(cbounds);
 
     return cspace;

@@ -58,43 +58,24 @@ namespace oc = ompl::control;
 void plan(const std::string plannerName)
 {
     // provide start and goals for every robot
-    const std::map<std::string, std::pair<double, double>> start_map{       {"Robot 1", {3.0, 0.5}}, 
-                                                                            {"Robot 2", {8.5, 0.5}},
-                                                                            {"Robot 3", {9.0, 7.0}},
-                                                                            {"Robot 4", {1.0, 8.0}},
-                                                                            {"Robot 5", {1.5, 4.5}},
-                                                                            {"Robot 6", {9.0, 3.0}},
+    const std::map<std::string, std::pair<double, double>> start_map{       {"Robot 1", {1.0, 0.5}}, 
+                                                                            {"Robot 2", {1.0, 3.5}},
+                                                                            {"Robot 3", {9.0, 0.5}},
+                                                                            {"Robot 4", {9.0, 3.5}},
                                                                         };
 
-    const std::map<std::string, std::pair<double, double>> goal_map{        {"Robot 1", {7.0, 0.5}}, 
-                                                                            {"Robot 2", {5.0, 2.5}},
-                                                                            {"Robot 3", {6.0, 7.0}}, 
-                                                                            {"Robot 4", {9.0, 3.0}},
-                                                                            {"Robot 5", {1.0, 8.0}},
-                                                                            {"Robot 6", {9.0, 6.0}},
+    const std::map<std::string, std::pair<double, double>> goal_map{        {"Robot 1", {9.0, 0.5}}, 
+                                                                            {"Robot 2", {9.0, 9.0}},
+                                                                            {"Robot 3", {1.0, 0.5}}, 
+                                                                            {"Robot 4", {1.0, 9.0}},
                                                                         };
 
     // provide obstacles
     std::set<Obstacle*> obs_set;
-    // auto obs1 = new RectangularObstacle(2, 1.25, 2, 1);
-    auto obs1 = new RectangularObstacle(6.0, 1.25, 4.5, 1);
-    auto obs2 = new RectangularObstacle(5.5, 1.25, 4.5, 1);
-    auto obs3 = new RectangularObstacle(2.0, 8.0, 1, 1);
-    auto obs4 = new RectangularObstacle(7.0, 6.0, 1, 2);
-    auto obs5 = new RectangularObstacle(9.0, 9.0, 1, 1);
-    auto obs6 = new RectangularObstacle(4.0, 4.0, 1, 1);
-    auto obs7 = new RectangularObstacle(0.0, 0.0, 1, 1);
-    auto obs8 = new RectangularObstacle(0.0, 5.5, 2, 1);
-    auto obs9 = new RectangularObstacle(7.0, 2.25, 1, 1);
+    auto obs1 = new RectangularObstacle(0.5, 1.8, 9.0, 1.0); // lower_left_x. lower_left_y, length, width
+    auto obs2 = new RectangularObstacle(4.0, 5.0, 2.0, 2.0);
     obs_set.insert(obs1);
     obs_set.insert(obs2);
-    obs_set.insert(obs3);
-    obs_set.insert(obs4);
-    obs_set.insert(obs5);
-    obs_set.insert(obs6);
-    obs_set.insert(obs7);
-    obs_set.insert(obs8);
-    obs_set.insert(obs9);
 
     // construct all of the robots
     std::unordered_map<std::string, Robot*> robot_map;
@@ -174,7 +155,7 @@ void plan(const std::string plannerName)
         planner = std::make_shared<omrc::KCBS>(ma_si);
         planner->as<omrc::KCBS>()->setLowLevelSolveTime(5.);
         planner->as<omrc::KCBS>()->setNumThreads(std::thread::hardware_concurrency());
-        planner->as<omrc::KCBS>()->setMergeBound(20);
+        planner->as<omrc::KCBS>()->setMergeBound(10);
     }
     else
     {
@@ -207,8 +188,8 @@ void plan(const std::string plannerName)
 
 int main(int argc, char ** argv)
 {
-    std::string plannerName = "K-CBS";
-    // std::string plannerName = "PP";
-    std::cout << "Planning for 6 2nd order cars inside a Congested 10x10 workspace with " << plannerName << "." << std::endl;
+    // std::string plannerName = "K-CBS";
+    std::string plannerName = "PP";
+    std::cout << "Planning for 4 2nd order cars inside a Corridor 10x10 workspace with " << plannerName << "." << std::endl;
     plan(plannerName);
 }

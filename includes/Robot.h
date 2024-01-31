@@ -44,11 +44,25 @@
 typedef boost::geometry::model::d2::point_xy<double> BoostPoint;
 typedef boost::geometry::model::polygon<BoostPoint, false, true> BoostPolygon;
 
+/*
+* ***************************************************************
+* ********************* 2D Robot Definitions ********************
+* ***************************************************************
+*/
+
 // A Robot has a name and shape
 class Robot
 {
 public:
     Robot(std::string name): name_(name) {};
+    /** \brief Cast this instance to a desired type. */
+    template <class T>
+    T *as()
+    {
+        /** \brief Make sure the type we are casting to is indeed a robot */
+        BOOST_CONCEPT_ASSERT((boost::Convertible<T *, Robot *>));
+        return static_cast<T *>(this);
+    }
     const std::string getName() const {return name_;};
     const BoostPolygon& getShape() const {return shape_;};
     const double getBoundingRadius() const {return bounding_radius_;};
@@ -61,10 +75,13 @@ public:
             printf("\t- Point(%0.2f, %0.2f)\n", boost::geometry::get<0>(exterior_points[i]), boost::geometry::get<1>(exterior_points[i]));
         }
     }
+    void setDynamics(std::string s) {dynamics_ = s;}
+    std::string getDynamics() const {return dynamics_;};
 protected:
     const std::string name_;
     BoostPolygon shape_; // assumed to be centered at origin
     double bounding_radius_;
+    std::string dynamics_;
 };
 
 // a rectangular robot class
@@ -94,5 +111,51 @@ private:
     const double length_;
     const double width_;
 };
+
+class CompoundRobot: public Robot
+{
+public:
+    CompoundRobot(std::string name, Robot* robot1, Robot* robot2):
+        robot1_(robot1), robot2_(robot2), Robot(name) {}
+    Robot* getRobot(unsigned int idx)
+    {
+        if (idx == 0)
+            return robot1_;
+        else if (idx == 1)
+            return robot2_;
+        return nullptr;
+    }
+private:
+    Robot* robot1_;
+    Robot* robot2_;
+};
+
+/*
+* ***************************************************************
+* ********************* 3D Robot Definitions ********************
+* ***************************************************************
+*/
+
+// a rectangular robot class in 3D
+/*
+// IMPORTANT NOTE: Apparently, Boost does not support intersection / disjoint operations
+	with 3d points (e.g. https://stackoverflow.com/questions/49006155/how-to-intersection-to-3d-polygons-by-boost-c-library).
+	Therefore, this class still contains a 2D polygon, but the robot has a height h>0 that is used in collision checking
+	rather than simply checking the intersection of two 3D polygons. height is defined as the "max vertical distance from center
+    of the robot." (e.g. a 1x1x1 robot would have height == 0.5)
+*/
+class RectangularRobot3D: public RectangularRobot 
+{
+public:
+    RectangularRobot3D(std::string name, const double length, const double width, const double height):
+        height_(height), RectangularRobot(name, length, width)
+    {
+        
+    };
+    const double getHeight() const {return height_;};
+private:
+    const double height_;
+};
+
 
 

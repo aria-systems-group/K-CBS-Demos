@@ -42,7 +42,7 @@
 #include "StatePropagatorDatabase.h"
 #include "GoalRegionDatabase.h"
 #include "PlannerAllocatorDatabase.h"
-#include "Benchmark.h"
+#include "SystemMergerDatabase.h"
 
 #include <ompl/multirobot/control/planners/kcbs/KCBS.h>
 #include <ompl/multirobot/control/planners/pp/PP.h>
@@ -169,10 +169,14 @@ void plan(const std::string plannerName)
     omrb::PlannerPtr planner = nullptr;
     if (plannerName == "K-CBS")
     {
+    	// set the system merger
+    	omrc::SystemMergerPtr merger = std::make_shared<homogeneous2ndOrderCarSystemMerger>(ma_si, ma_pdef, robot_map, obs_set, 10, start_map, goal_map);
+    	ma_si->setSystemMerger(merger);
         // plan using Kinodynamic Conflict Based Search
         planner = std::make_shared<omrc::KCBS>(ma_si);
         planner->as<omrc::KCBS>()->setLowLevelSolveTime(5.);
         planner->as<omrc::KCBS>()->setNumThreads(std::thread::hardware_concurrency());
+        planner->as<omrc::KCBS>()->setMergeBound(20);
     }
     else
     {
