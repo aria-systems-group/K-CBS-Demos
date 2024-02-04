@@ -89,12 +89,9 @@ public:
         const double* r2_pos = st->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(2)->values;
         double d1 = getDistance(r1_pos[0], r1_pos[1], gx1_, gy1_);
         double d2 = getDistance(r2_pos[0], r2_pos[1], gx2_, gy2_);
+        *distance = d1 + d2;
         // check if both are in goal while updating distance
-        if (d1 > threshold_)
-            *distance += d1;
-        if (d2 > threshold_)
-            *distance += d2;
-        if (*distance == 0)
+        if (d1 < threshold_ && d2 < threshold_)
             return true;
         return false;
     }
