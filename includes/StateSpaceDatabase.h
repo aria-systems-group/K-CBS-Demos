@@ -60,3 +60,31 @@ ob::StateSpacePtr createBounded2ndOrderCarStateSpace(const unsigned int x_max, c
 
     return space;
 }
+
+ob::StateSpacePtr createBoundedTwo2ndOrderCarStateSpace(const unsigned int x_max, const unsigned int y_max)
+{
+    ob::StateSpacePtr space = std::make_shared<ob::CompoundStateSpace>();
+    // robot 1
+    space->as<ob::CompoundStateSpace>()->addSubspace(ob::StateSpacePtr(new ob::RealVectorStateSpace(4)), 1.0);
+    space->as<ob::CompoundStateSpace>()->addSubspace(ob::StateSpacePtr(new ob::SO2StateSpace()), 1.0);
+    // robot 2
+    space->as<ob::CompoundStateSpace>()->addSubspace(ob::StateSpacePtr(new ob::RealVectorStateSpace(4)), 1.0);
+    space->as<ob::CompoundStateSpace>()->addSubspace(ob::StateSpacePtr(new ob::SO2StateSpace()), 1.0);
+    // lock
+    space->as<ob::CompoundStateSpace>()->lock();
+    
+    // set the bounds for the RealVectorStateSpace 
+    ob::RealVectorBounds bounds(4);
+    bounds.setLow(0, 0); //  x lower bound
+    bounds.setHigh(0, x_max); // x upper bound
+    bounds.setLow(1, 0);  // y lower bound
+    bounds.setHigh(1, y_max); // y upper bound
+    bounds.setLow(2, -1);  // v lower bound
+    bounds.setHigh(2, 1); // v upper bound
+    bounds.setLow(3, -M_PI / 3);  // phi lower bound
+    bounds.setHigh(3, M_PI / 3); // phi upper bound
+    space->as<ob::CompoundStateSpace>()->as<ob::RealVectorStateSpace>(0)->setBounds(bounds);
+    space->as<ob::CompoundStateSpace>()->as<ob::RealVectorStateSpace>(2)->setBounds(bounds);
+    
+    return space;
+}

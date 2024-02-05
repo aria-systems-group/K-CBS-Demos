@@ -54,10 +54,10 @@ namespace omrc = ompl::multirobot::control;
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 
-std::pair<omrc::SpaceInformationPtr, omrb::ProblemDefinitionPtr> setScene()
+void benchmark(const std::string plannerName)
 {
     // provide start and goals for every robot
-    const std::unordered_map<std::string, std::pair<int, int>> start_map{   {"Robot 0", {11, 6}}, 
+    const std::map<std::string, std::pair<int, int>> start_map{   {"Robot 0", {11, 6}}, 
                                                                             {"Robot 1", {29, 9}}, 
                                                                             {"Robot 2", {9, 1}},
                                                                             {"Robot 3", {11, 16}},
@@ -69,7 +69,7 @@ std::pair<omrc::SpaceInformationPtr, omrb::ProblemDefinitionPtr> setScene()
                                                                             {"Robot 9", {10, 22}},
                                                                         };
 
-    const std::unordered_map<std::string, std::pair<int, int>> goal_map{    {"Robot 0", {7, 18}}, 
+    const std::map<std::string, std::pair<int, int>> goal_map{    {"Robot 0", {7, 18}}, 
                                                                             {"Robot 1", {3, 5}}, 
                                                                             {"Robot 2", {13, 21}},
                                                                             {"Robot 3", {26, 15}},
@@ -81,7 +81,8 @@ std::pair<omrc::SpaceInformationPtr, omrb::ProblemDefinitionPtr> setScene()
                                                                             {"Robot 9", {18, 4}},
                                                                         };
 
-    // construct all of the robots
+
+    // construct all of the robots (assume square robots with unit length)
     std::unordered_map<std::string, Robot*> robot_map;
     for (auto itr = start_map.begin(); itr != start_map.end(); itr++)
     {
@@ -134,7 +135,7 @@ std::pair<omrc::SpaceInformationPtr, omrb::ProblemDefinitionPtr> setScene()
 
         // set the start and goal states
         pdef->addStartState(start);
-        pdef->setGoal(std::make_shared<GoalRegion2ndOrderCar>(si, goal_map.at(itr->first)));
+        pdef->setGoal(std::make_shared<GoalRegion2ndOrderCar>(si, goal_map.at(itr->first).first, goal_map.at(itr->first).second));
 
         // add the individual information to the multi-robot SpaceInformation and ProblemDefinition
         ma_si->addIndividual(si);
@@ -148,46 +149,35 @@ std::pair<omrc::SpaceInformationPtr, omrb::ProblemDefinitionPtr> setScene()
     // lock the multi-robot SpaceInformation and ProblemDefinitions when done adding individuals
     ma_si->lock();
     ma_pdef->lock();
-    return {ma_si, ma_pdef};
-}
-
-
-void benchmark()
-{
-    // build the problem setting
-    omrc::SpaceInformationPtr si = nullptr;
-    omrb::ProblemDefinitionPtr pdef = nullptr;
-    std::tie(si, pdef) = setScene();
 
     // instantiate the benchmark class and set the problem setting
     auto b = std::make_shared<Benchmark>();
-    b->setSpaceInformation(si);
-    b->setPoroblemDefinition(pdef);
-
-    // // allocate the planners for the benchmark
-    // // planner 1: K-CBS
-    // omrb::PlannerPtr planner1 = std::make_shared<omrc::KCBS>(si);
-    // planner1->setProblemDefinition(pdef);
-    // planner1->as<omrc::KCBS>()->setLowLevelSolveTime(5.);
-    // b->addPlanner(planner1);
-
-    // // planner 2: PP
-    // omrb::PlannerPtr planner2 = std::make_shared<omrc::PP>(si);
-    // planner2->setProblemDefinition(pdef);
-    // b->addPlanner(planner2);
+    b->setSpaceInformation(ma_si);
+    b->setPoroblemDefinition(ma_pdef);
 
     // set optional params
     b->setSolveTime(180); // optional -- default is 300 seconds
-    // b->setNumberOfRuns(10); // optional -- default is 100 runs
-    b->setFileName("KCBS-BaselineReplanningTest2-Empty32x32-10robots"); // optional -- default is "Results"
 
-    // run the benchmark
-    b->runKCBS();
-    b->writeCSV();
+    /* For benchmarking KCBS*/
+    std::string results_string;
+    if (plannerName == "K-CBS")
+        results_string = "KCBS-benchmark-Empty32x32-10robots";
+    else
+        results_string = "PP-benchmark-Empty32x32-10robots";
+    
+    b->setFileName(results_string); // optional -- default is "Results"
+
+    /* Perform a single planner run and save relevent data */
+    if (plannerName == "K-CBS")
+        b->runKCBS();
+    else
+        b->runPP();
 }
 
 int main(int argc, char ** argv)
 {
-    std::cout << "Benchmarking problem with 10 2nd order cars inside an Empty 32x32 workspace with K-CBS." << std::endl;
-    benchmark();
+    std::string plannerName = "K-CBS";
+    // std::string plannerName = "PP";
+    std::cout << "Planning for 10 2nd order cars inside an Empty 32x32 workspace with " << plannerName << "." << std::endl;
+    benchmark(plannerName);
 }

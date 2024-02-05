@@ -34,6 +34,7 @@
 
 /* Author: Justin Kottinger */
 
+#include <iterator>
 #include <ompl/multirobot/control/SpaceInformation.h>
 #include <ompl/multirobot/base/ProblemDefinition.h>
 #include <ompl/multirobot/base/Planner.h>
@@ -41,6 +42,53 @@
 #include <map>
 #include <iostream>
 #include <fstream>
+
+/*********************************************************************
+* Software License Agreement (BSD License)
+*
+*  Copyright (c) 2010, Rice University
+*  All rights reserved.
+*
+*  Redistribution and use in source and binary forms, with or without
+*  modification, are permitted provided that the following conditions
+*  are met:
+*
+*   * Redistributions of source code must retain the above copyright
+*     notice, this list of conditions and the following disclaimer.
+*   * Redistributions in binary form must reproduce the above
+*     copyright notice, this list of conditions and the following
+*     disclaimer in the documentation and/or other materials provided
+*     with the distribution.
+*   * Neither the name of the Rice University nor the names of its
+*     contributors may be used to endorse or promote products derived
+*     from this software without specific prior written permission.
+*
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+*  POSSIBILITY OF SUCH DAMAGE.
+*********************************************************************/
+
+/* Author: Justin Kottinger */
+
+#include <ompl/multirobot/control/SpaceInformation.h>
+#include <ompl/multirobot/base/ProblemDefinition.h>
+#include <ompl/multirobot/base/Planner.h>
+#include <ompl/multirobot/control/planners/kcbs/KCBS.h>
+#include <ompl/multirobot/control/planners/pp/PP.h>
+#include <map>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <thread>
 
 namespace omrb = ompl::multirobot::base;
 namespace omrc = ompl::multirobot::control;
@@ -57,8 +105,10 @@ public:
         results_.clear();
         si_.reset();
         pdef_.reset();
-        for (auto &p: planners_)
+        for (auto &p: planners_) {
+            std::cout << p.use_count() << std::endl;
             p.reset();
+        }
     }
 
     void setSpaceInformation(omrc::SpaceInformationPtr &si)
@@ -81,6 +131,11 @@ public:
         solveTime_ = t;
     }
 
+    void setKCBSMergeBound(int value)
+    {
+        merge_bound_ = value;
+    }
+
     void setNumberOfRuns(const unsigned int n)
     {
         numRuns_ = n;
@@ -91,99 +146,60 @@ public:
         filename_ = name;
     }
 
-    void run()
-    {
-        // set up all of the planners and saveable parameters
-        for (auto &p: planners_)
-        {
-            results_[p->getName() + " Success (Bool)"] = {};
-            results_[p->getName() + " Computation Times (seconds)"] = {};
-            if (p->getName() == "K-CBS")
-            {
-                results_[p->getName() + " Number of Expanded Nodes"] = {};
-                results_[p->getName() + " Number Approximate Solutions"] = {};
-                results_[p->getName() + " Root Node Solve Time"] = {};
-            }
-        }
-
-        std::cout << "Set-Up Complete: Benchmarking..." << std::endl;
-
-        for (unsigned int n = 0; n < numRuns_; n++)
-        {
-            std::cout << "Run " << n << std::endl;
-            for (auto &p: planners_)
-            {
-                // time the planner's solve sequence
-                auto start = std::chrono::high_resolution_clock::now();
-                ob::PlannerStatus solved = p->solve(solveTime_);
-                auto end = std::chrono::high_resolution_clock::now();
-                auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-                double duration_s = (duration_ms.count() * 0.001);
-
-                // save the relevant data
-                results_[p->getName() + " Success (Bool)"].push_back(std::to_string(solved == ob::PlannerStatus::EXACT_SOLUTION));
-                results_[p->getName() + " Computation Times (seconds)"].push_back(std::to_string(duration_s));
-                if (p->getName() == "K-CBS")
-                {
-                    results_[p->getName() + " Number of Expanded Nodes"].push_back(std::to_string(p->as<omrc::KCBS>()->getNumberOfNodesExpanded()));
-                    results_[p->getName() + " Number Approximate Solutions"].push_back(std::to_string(p->as<omrc::KCBS>()->getNumberOfApproximateSolutions()));
-                    results_[p->getName() + " Root Node Solve Time"].push_back(std::to_string(p->as<omrc::KCBS>()->getRootSolveTime()));
-                }
-
-                // clear the planner data
-                p->clear();
-
-                // reset the problem definition
-                pdef_->clearSolutionPaths();
-            }
-        }
-    }
-
     void runKCBS()
     {
-        // set up all of the saveable parameters for KCBS
-        results_["K-CBS Success (Bool)"] = {};
-        results_["K-CBS Computation Times (seconds)"] = {};
-        results_["K-CBS Number of Expanded Nodes"] = {};
-        results_["K-CBS Number Approximate Solutions"] = {};
-        results_["K-CBS Root Node Solve Time"] = {};
+        omrc::KCBS p(si_);
+        p.setProblemDefinition(pdef_);
+        p.setLowLevelSolveTime(5.);
+        p.setMergeBound(merge_bound_);
 
-        std::cout << "Set-Up Complete: Benchmarking KCBS..." << std::endl;
+        // time the planner's solve sequence
+        auto start = std::chrono::high_resolution_clock::now();
+        ob::PlannerStatus solved = p.as<omrb::Planner>()->solve(solveTime_);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        double duration_s = (duration_ms.count() * 0.001);
 
-        for (unsigned int n = 0; n < numRuns_; n++)
-        {
-            std::cout << "Run " << n << std::endl;
+        // save the relevant data
+        results_.insert({"K-CBS Success (Bool)", std::to_string(solved == ob::PlannerStatus::EXACT_SOLUTION)});
+        results_.insert({"K-CBS Computation Times (s)", std::to_string(duration_s)});
+        results_.insert({"K-CBS Root Node Solve Time (s)", std::to_string(p.getRootSolveTime())});
+        results_.insert({"K-CBS Number of Expanded Nodes", std::to_string(p.getNumberOfNodesExpanded())});
+        results_.insert({"K-CBS Number Approximate Solutions", std::to_string(p.getNumberOfApproximateSolutions())});
 
-            omrb::PlannerPtr p = std::make_shared<omrc::KCBS>(si_);
-            p->setProblemDefinition(pdef_);
-            p->as<omrc::KCBS>()->setLowLevelSolveTime(5.);
+        // reset the problem definition
+        pdef_->clearSolutionPaths();
 
-            // time the planner's solve sequence
-            auto start = std::chrono::high_resolution_clock::now();
-            ob::PlannerStatus solved = p->solve(solveTime_);
-            auto end = std::chrono::high_resolution_clock::now();
-            auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-            double duration_s = (duration_ms.count() * 0.001);
+        p.clear();
+        writeCSV();
+    }
 
-            // save the relevant data
-            results_[p->getName() + " Success (Bool)"].push_back(std::to_string(solved == ob::PlannerStatus::EXACT_SOLUTION));
-            results_[p->getName() + " Computation Times (seconds)"].push_back(std::to_string(duration_s));
-            results_[p->getName() + " Number of Expanded Nodes"].push_back(std::to_string(p->as<omrc::KCBS>()->getNumberOfNodesExpanded()));
-            results_[p->getName() + " Number Approximate Solutions"].push_back(std::to_string(p->as<omrc::KCBS>()->getNumberOfApproximateSolutions()));
-            results_[p->getName() + " Root Node Solve Time"].push_back(std::to_string(p->as<omrc::KCBS>()->getRootSolveTime()));
+    void runPP()
+    {
+        omrc::PP p(si_);
+        p.setProblemDefinition(pdef_);
 
-            // reset the problem definition
-            pdef_->clearSolutionPaths();
+        // time the planner's solve sequence
+        auto start = std::chrono::high_resolution_clock::now();
+        ob::PlannerStatus solved = p.as<omrb::Planner>()->solve(solveTime_);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        double duration_s = (duration_ms.count() * 0.001);
 
-            p->clear();
-            p.reset();
-        }
+        // save the relevant data
+        results_.insert({"PP Success (Bool)", std::to_string(solved == ob::PlannerStatus::EXACT_SOLUTION)});
+        results_.insert({"PP Computation Times (s)", std::to_string(duration_s)});
+
+        // reset the problem definition
+        pdef_->clearSolutionPaths();
+
+        p.clear();
+        writeCSV();
     }
 
     void writeCSV()
     {
         std::string name = filename_ + ".csv";
-
         std::ifstream infile(name);
         bool exist = infile.good();
         infile.close();
@@ -196,14 +212,9 @@ public:
             addHeads.close();
         }
         std::ofstream stats(name, std::ios::app);
-        for (unsigned int idx = 0; idx != numRuns_; idx++)
-        {
-            for(auto itr = results_.begin(); itr != results_.end(); ++itr)
-            {
-                stats << itr->second[idx] << ",";
-            }
-            stats << std::endl;
-        }
+        for(auto itr = results_.begin(); itr != results_.end(); ++itr)
+            stats << itr->second << ",";
+        stats << std::endl;
         stats.close();
     }
 
@@ -213,6 +224,7 @@ private:
     std::vector<omrb::PlannerPtr> planners_;
     double solveTime_;
     unsigned int numRuns_;
+    int merge_bound_ = std::numeric_limits<int>::max();
     std::string filename_;
-    std::map<std::string, std::vector<std::string>> results_;
+    std::map<std::string, std::string> results_;
 };

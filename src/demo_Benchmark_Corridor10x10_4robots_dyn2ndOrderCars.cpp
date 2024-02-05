@@ -41,6 +41,7 @@
 #include "StatePropagatorDatabase.h"
 #include "GoalRegionDatabase.h"
 #include "PlannerAllocatorDatabase.h"
+#include "SystemMergerDatabase.h"
 #include "Benchmark.h"
 
 #include <ompl/multirobot/control/planners/kcbs/KCBS.h>
@@ -57,55 +58,30 @@ namespace oc = ompl::control;
 void benchmark(const std::string plannerName)
 {
     // provide start and goals for every robot
-    const std::unordered_map<std::string, std::pair<int, int>> start_map{   {"Robot 0", {11, 6}}, 
-                                                                            {"Robot 1", {29, 9}}, 
-                                                                            {"Robot 2", {9, 1}},
-                                                                            {"Robot 3", {11, 16}},
-                                                                            {"Robot 4", {3, 26}},
-                                                                            {"Robot 5", {30, 28}},
-                                                                            {"Robot 6", {2, 12}},
-                                                                            {"Robot 7", {18, 12}},
-                                                                            {"Robot 8", {19, 21}},
-                                                                            {"Robot 9", {10, 22}},
-                                                                            {"Robot 10", {28, 20}},
-                                                                            {"Robot 11", {24, 12}},
-                                                                            {"Robot 12", {17, 30}},
-                                                                            {"Robot 13", {14, 2}},
-                                                                            {"Robot 14", {4, 30}},
-                                                                            {"Robot 15", {8, 30}},
-                                                                            {"Robot 16", {2, 8}},
-                                                                            {"Robot 17", {18, 18}},
-                                                                            {"Robot 18", {30, 24}},
-                                                                            {"Robot 19", {12, 24}},
+    const std::map<std::string, std::pair<double, double>> start_map{       {"Robot 1", {1.0, 0.5}}, 
+                                                                            {"Robot 2", {1.0, 3.5}},
+                                                                            {"Robot 3", {9.0, 0.5}},
+                                                                            {"Robot 4", {9.0, 3.5}},
                                                                         };
 
-    const std::unordered_map<std::string, std::pair<int, int>> goal_map{    {"Robot 0", {7, 18}}, 
-                                                                            {"Robot 1", {3, 5}}, 
-                                                                            {"Robot 2", {13, 21}},
-                                                                            {"Robot 3", {26, 15}},
-                                                                            {"Robot 4", {24, 26}},
-                                                                            {"Robot 5", {22, 18}},
-                                                                            {"Robot 6", {14, 30}},
-                                                                            {"Robot 7", {27, 3}},
-                                                                            {"Robot 8", {30, 22}},
-                                                                            {"Robot 9", {18, 4}},
-                                                                            {"Robot 10", {28, 8}},
-                                                                            {"Robot 11", {4, 12}},
-                                                                            {"Robot 12", {31, 26}},
-                                                                            {"Robot 13", {31, 5}},
-                                                                            {"Robot 14", {2, 20}},
-                                                                            {"Robot 15", {27, 31}},
-                                                                            {"Robot 16", {11, 3}},
-                                                                            {"Robot 17", {16, 28}},
-                                                                            {"Robot 18", {22, 10}},
-                                                                            {"Robot 19", {22, 14}},
+    const std::map<std::string, std::pair<double, double>> goal_map{        {"Robot 1", {9.0, 0.5}}, 
+                                                                            {"Robot 2", {9.0, 9.0}},
+                                                                            {"Robot 3", {1.0, 0.5}}, 
+                                                                            {"Robot 4", {1.0, 9.0}},
                                                                         };
+
+    // provide obstacles
+    std::set<Obstacle*> obs_set;
+    auto obs1 = new RectangularObstacle(0.5, 2.0, 9.0, 0.5); // lower_left_x. lower_left_y, length, width
+    auto obs2 = new RectangularObstacle(4.0, 5.0, 2.0, 2.0);
+    obs_set.insert(obs1);
+    obs_set.insert(obs2);
 
     // construct all of the robots
     std::unordered_map<std::string, Robot*> robot_map;
     for (auto itr = start_map.begin(); itr != start_map.end(); itr++)
     {
-        Robot* robot = new RectangularRobot(itr->first, 0.7, 0.5);
+        Robot* robot = new RectangularRobot(itr->first, 1.0, 1.0);
         robot_map[itr->first] = robot;
     }
 
@@ -117,7 +93,7 @@ void benchmark(const std::string plannerName)
     for (auto itr = start_map.begin(); itr != start_map.end(); itr++) 
     {
         // construct the state space we are planning in
-        auto space = createBounded2ndOrderCarStateSpace(32, 32);
+        auto space = createBounded2ndOrderCarStateSpace(10, 10);
 
         // name the state space parameter
         space->setName(itr->first);
@@ -129,7 +105,7 @@ void benchmark(const std::string plannerName)
         auto si(std::make_shared<oc::SpaceInformation>(space, cspace));
 
         // // set state validity checking for this space
-        si->setStateValidityChecker(std::make_shared<homogeneous2ndOrderCarSystemSVC>(si, robot_map));
+        si->setStateValidityChecker(std::make_shared<homogeneous2ndOrderCarSystemSVC>(si, robot_map, obs_set));
 
         // set the state propagation routine
         auto odeSolver(std::make_shared<oc::ODEBasicSolver<>>(si, &SecondOrderCarODE));
@@ -165,6 +141,10 @@ void benchmark(const std::string plannerName)
     ompl::base::PlannerAllocator allocator = &allocateControlRRT;
     ma_si->setPlannerAllocator(allocator);
 
+    // set the system merger
+    omrc::SystemMergerPtr merger = std::make_shared<homogeneous2ndOrderCarSystemMerger>(ma_si, ma_pdef, robot_map, obs_set, 10, start_map, goal_map);
+    ma_si->setSystemMerger(merger);
+
     // lock the multi-robot SpaceInformation and ProblemDefinitions when done adding individuals
     ma_si->lock();
     ma_pdef->lock();
@@ -176,17 +156,18 @@ void benchmark(const std::string plannerName)
 
     // set optional params
     b->setSolveTime(180); // optional -- default is 300 seconds
+    b->setKCBSMergeBound(10); // optional -- default is std::max
 
     /* For benchmarking KCBS*/
     std::string results_string;
     if (plannerName == "K-CBS")
-        results_string = "KCBS-benchmark-Empty32x32-20robots";
+        results_string = "KCBS-benchmark-Corridor10x10-4robots";
     else
-        results_string = "PP-benchmark-Empty32x32-20robots";
+        results_string = "PP-benchmark-Corridor10x10-4robots";
     
     b->setFileName(results_string); // optional -- default is "Results"
 
-    /* Perform a single planner run and save relevent data */
+    /* Perform a single planner run and save relevant data */
     if (plannerName == "K-CBS")
         b->runKCBS();
     else
@@ -197,6 +178,6 @@ int main(int argc, char ** argv)
 {
     std::string plannerName = "K-CBS";
     // std::string plannerName = "PP";
-    std::cout << "Planning for 20 2nd order cars inside an Empty 32x32 workspace with " << plannerName << "." << std::endl;
+    std::cout << "Planning for 4 2nd order cars inside a Corridor 10x10 workspace with " << plannerName << "." << std::endl;
     benchmark(plannerName);
 }

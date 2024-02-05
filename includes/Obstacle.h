@@ -40,52 +40,55 @@
 #include <boost/geometry/algorithms/correct.hpp>
 #include <boost/geometry/strategies/transform/matrix_transformers.hpp>
 #include <stdio.h>
+#include <iostream>
 
 typedef boost::geometry::model::d2::point_xy<double> BoostPoint;
 typedef boost::geometry::model::polygon<BoostPoint, false, true> BoostPolygon;
 
 // A Robot has a name and shape
-class Robot
+class Obstacle
 {
 public:
-    Robot(std::string name): name_(name) {};
-    /** \brief Cast this instance to a desired type. */
+    Obstacle() {};
     template <class T>
     T *as()
     {
         /** \brief Make sure the type we are casting to is indeed a robot */
-        BOOST_CONCEPT_ASSERT((boost::Convertible<T *, Robot *>));
-        return static_cast<T *>(this);
+        BOOST_CONCEPT_ASSERT((boost::Convertible<T*, Obstacle*>));
+        return static_cast<T*>(this);
     }
-    const std::string getName() const {return name_;};
     const BoostPolygon& getShape() const {return shape_;};
     const double getBoundingRadius() const {return bounding_radius_;};
+    const double* getCenterPoint() const { return center_;};
     void printShape() const
     {
         auto exterior_points = boost::geometry::exterior_ring(shape_);
-        printf("Printing shape for %s\n", name_.c_str());
+        printf("Printing shape for Obstacle\n");
         for (int i=0; i<exterior_points.size(); i++) 
         {
             printf("\t- Point(%0.2f, %0.2f)\n", boost::geometry::get<0>(exterior_points[i]), boost::geometry::get<1>(exterior_points[i]));
         }
     }
 protected:
-    const std::string name_;
-    BoostPolygon shape_; // assumed to be centered at origin
+    double center_[2];
+    BoostPolygon shape_;
     double bounding_radius_;
 };
 
 // a rectangular robot class
-class RectangularRobot: public Robot 
+class RectangularObstacle: public Obstacle 
 {
 public:
-    RectangularRobot(std::string name, const double length, const double width):
-        length_(length), width_(width), Robot(name) 
+    RectangularObstacle(const double x, const double y, const double length, const double width):
+        length_(length), width_(width), Obstacle() 
     {
-        BoostPoint bott_left    ((-length_ / 2),   (-width_ / 2));
-        BoostPoint bott_right   ((length_ / 2),    (-width_ / 2));
-        BoostPoint top_left     ((-length_ / 2),   (width_ / 2));
-        BoostPoint top_right    ((length_ / 2),    (width_ / 2));
+        center_[0] = x + (length_ / 2);
+        center_[1] = y + (width_ / 2);
+
+        BoostPoint bott_left    (x,   y);
+        BoostPoint bott_right   (x + length_,    y);
+        BoostPoint top_left     (x,   y + width_);
+        BoostPoint top_right    (x + length_, y + width_);
 
         boost::geometry::append(shape_.outer(), bott_left);
         boost::geometry::append(shape_.outer(), bott_right);
@@ -101,22 +104,4 @@ public:
 private:
     const double length_;
     const double width_;
-};
-
-class CompoundRobot: public Robot
-{
-public:
-    CompoundRobot(std::string name, Robot* robot1, Robot* robot2):
-        robot1_(robot1), robot2_(robot2), Robot(name) {}
-    Robot* getRobot(unsigned int idx)
-    {
-        if (idx == 0)
-            return robot1_;
-        else if (idx == 1)
-            return robot2_;
-        return nullptr;
-    }
-private:
-    Robot* robot1_;
-    Robot* robot2_;
 };

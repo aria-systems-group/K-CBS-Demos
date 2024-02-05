@@ -42,10 +42,10 @@ namespace ob = ompl::base;
 class GoalRegion2ndOrderCar: public ob::GoalRegion
 {
 public:
-    GoalRegion2ndOrderCar(const ob::SpaceInformationPtr &si, std::pair<int, int> goal): 
-        ob::GoalRegion(si), gx_(goal.first), gy_(goal.second)
+    GoalRegion2ndOrderCar(const ob::SpaceInformationPtr &si, double gx, double gy): 
+        ob::GoalRegion(si), gx_(gx), gy_(gy)
     {
-        threshold_ = 0.25;
+        threshold_ = 0.5;
     }
     
     double distanceGoal(const ob::State *st) const override
@@ -54,6 +54,55 @@ public:
         return sqrt(pow(robot_pos[0] - gx_, 2) + pow(robot_pos[1] - gy_, 2));
     }
 private:
-    int gx_;
-    int gy_;
+    const double gx_;
+    const double gy_;
+};
+
+class GoalRegionTwo2ndOrderCars: public ob::Goal
+{
+public:
+    GoalRegionTwo2ndOrderCars(const ob::SpaceInformationPtr &si, double gx1, double gy1, double gx2, double gy2): 
+        ob::Goal(si), gx1_(gx1), gy1_(gy1), gx2_(gx2), gy2_(gy2)
+    {
+    }
+
+    bool isSatisfied(const ob::State *st) const override
+    {
+        // decompose the state
+        const double* r1_pos = st->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+        const double* r2_pos = st->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(2)->values;
+        // check if both are in goal
+        if (getDistance(r1_pos[0], r1_pos[1], gx1_, gy1_) < threshold_)
+        {
+            if (getDistance(r2_pos[0], r2_pos[1], gx2_, gy2_) < threshold_)
+                return true;
+        }
+        return false;
+    }
+
+    bool isSatisfied(const ob::State *st, double *distance) const override
+    {
+        *distance = 0;
+        // decompose the state
+        const double* r1_pos = st->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(0)->values;
+        const double* r2_pos = st->as<ob::CompoundStateSpace::StateType>()->as<ob::RealVectorStateSpace::StateType>(2)->values;
+        double d1 = getDistance(r1_pos[0], r1_pos[1], gx1_, gy1_);
+        double d2 = getDistance(r2_pos[0], r2_pos[1], gx2_, gy2_);
+        *distance = d1 + d2;
+        // check if both are in goal while updating distance
+        if (d1 < threshold_ && d2 < threshold_)
+            return true;
+        return false;
+    }
+ 
+private:
+    const double getDistance(const double x, const double y, const double gx, const double gy) const
+    {
+        return sqrt(pow(x - gx, 2) + pow(y - gy, 2));
+    }
+    const double gx1_;
+    const double gy1_;
+    const double gx2_;
+    const double gy2_;
+    const double threshold_ = 1.5;
 };
